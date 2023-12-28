@@ -1,0 +1,21 @@
+body {
+  background-color: gray;
+}
+
+.d-flex {
+  display: flex;
+  gap: 15px;
+}
+
+.v-center {
+  justify-content: center;
+}
+
+.h-center {
+  align-items: center;
+}
+
+.full-center {
+  justify-content: center;
+  align-items: center;
+}

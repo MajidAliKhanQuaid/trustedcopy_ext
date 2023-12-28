@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Trusted Copy",
+  "version": "0.0.1",
+  "description": "Trusted Copy Extension for capturing download",
+  "author": "admin@trustedcopy.com",
+  "icons": {
+    "16": "images/icon.png",
+    "48": "images/icon.png",
+    "128": "images/icon.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon.png",
+      "48": "images/icon.png",
+      "128": "images/icon.png"
+    },
+    "default_title": "My Amazing Chrome Extension"
+  },
+  "options_page": "options.html",
+  "permissions": ["downloads", "downloads.open"],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
