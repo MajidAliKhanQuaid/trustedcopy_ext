@@ -1,0 +1,15 @@
+body {
+  height: 299px;
+  width: 392px;
+  margin: 0px;
+  padding: 0px;
+  font-family: "Poppins";
+  font-size: 16px;
+}
+
+a,
+a:visited,
+a:active {
+  text-decoration: none;
+  color: #1965bf;
+}

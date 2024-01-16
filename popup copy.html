@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trusted Copy</title>
+    <script src="/scripts/jquery-3.7.1.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css?family=Poppins"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles/style.css" />
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <div class="tc-root d-flex f-column">
+      <div class="d-flex m-15">
+        <div>
+          <img src="./images/icon.png" />
+        </div>
+        <div class="d-flex v-center">
+          <div style="margin-top: 7px; margin-left: 10px">
+            <img src="./images/logo_text.png" width="100%" />
+          </div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="d-flex m-15">
+        <div>
+          <span class="heading">Pending Request</span>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="d-flex full-space m-15" style="flex-grow: 100">
+        <div>
+          <span style="color: #b9b9b9">No Pending Request</span>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="d-flex full-center">
+        <div>
+          <button
+            style="
+              background-color: transparent;
+              outline: none;
+              border: none;
+              padding: 15px;
+            "
+            class="btnShowVault"
+          >
+            <img src="./images/vault_button.png" />
+          </button>
+        </div>
+      </div>
+    </div>
+    <script src="./popup.js"></script>
+  </body>
+</html>

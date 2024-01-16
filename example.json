@@ -1,0 +1,68 @@
+{
+  "documentLifecycle": "active",
+  "frameId": 1443,
+  "frameType": "sub_frame",
+  "initiator": "https://drive.google.com",
+  "method": "GET",
+  "parentDocumentId": "C2FAF08265EE852937C72564EC1CB006",
+  "parentFrameId": 0,
+  "requestHeaders": [
+    {
+      "name": "sec-ch-ua",
+      "value": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\""
+    },
+    {
+      "name": "sec-ch-ua-mobile",
+      "value": "?0"
+    },
+    {
+      "name": "sec-ch-ua-platform",
+      "value": "\"Windows\""
+    },
+    {
+      "name": "Upgrade-Insecure-Requests",
+      "value": "1"
+    },
+    {
+      "name": "User-Agent",
+      "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    },
+    {
+      "name": "Accept",
+      "value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+    },
+    {
+      "name": "X-Client-Data",
+      "value": "CK+1yQEIhbbJAQiitskBCKmdygEIvvTKAQiWocsBCIWgzQEIjuHNAQis6c0BCKLuzQEIg/DNAQiv8s0BGOmYzQEYxuHNARin6s0BGPnyzQE="
+    },
+    {
+      "name": "Sec-Fetch-Site",
+      "value": "same-site"
+    },
+    {
+      "name": "Sec-Fetch-Mode",
+      "value": "navigate"
+    },
+    {
+      "name": "Sec-Fetch-Dest",
+      "value": "iframe"
+    },
+    {
+      "name": "Accept-Encoding",
+      "value": "gzip, deflate, br"
+    },
+    {
+      "name": "Accept-Language",
+      "value": "en-GB,en-US;q=0.9,en;q=0.8,ar;q=0.7"
+    },
+    {
+      "name": "Cookie",
+      "value": "SEARCH_SAMESITE=CgQIgJoB; OGPC=19036484-1:; SID=ewhWgS1w8SeRfrZ6BpabzWdMz_rcVxWu7QLXzh6pVG1z7Oyca6pcpW12uh93VXoSO4DB-A.; __Secure-1PSID=ewhWgS1w8SeRfrZ6BpabzWdMz_rcVxWu7QLXzh6pVG1z7OycR_j8iiEU-QCDtU83T5bO7A.; __Secure-3PSID=ewhWgS1w8SeRfrZ6BpabzWdMz_rcVxWu7QLXzh6pVG1z7OycOHfNwUVjMUJeymNFFWBCzQ.; HSID=AMooWe_rpbz2bXwRW; SSID=AkTvwmgfWBOHcPZg2; APISID=JmwXBR-y3R5zIqVq/Axl5MVDWnsEI4jCbv; SAPISID=b7MbHfHJN9-2bgtr/AcuF-qaI1Sctsnbft; __Secure-1PAPISID=b7MbHfHJN9-2bgtr/AcuF-qaI1Sctsnbft; __Secure-3PAPISID=b7MbHfHJN9-2bgtr/AcuF-qaI1Sctsnbft; AEC=Ae3NU9OzvyxrdTbBDmfO70ahGQiZ5LY8K0wvoVf7eplU6PxNBeDLPjgLuKc; NID=511=LXlFHMNo4BkPJNltaE-yPHIq_v7KwKp1CxL6Psh9Wuhab3DvplQtxPYyDU0Id3V4Zekzv5OgrtwxudqcCKNJPl965gYVf2jWmc4o0fs9l2hjoY1DN39xxOD0k7d2RaKSB3kTeV0z2jFmVhuGjN91bKxxr5-FD2gX7ygf5mVg6cUd3Mp0UKA7_2I9kreMpUNDsxbNkeRhyX2ZgS0EEVe3RGDxvYskUGegF7Qr95T06BKqLWl-UYGSxDIwTX032MCOWBpTGcAChv2a4Hw8qW6Qdh44NjdAV-gUTtdnX0CGySaVY4WzyF7W_1iBZhMv-NPJgFhn-KW7; 1P_JAR=2024-01-16-11; __Secure-1PSIDTS=sidts-CjIBPVxjSkay-TCX41hur6WzroNXO94lTJ7n5QudQZkk9nQY_FADQVj3PlaKxefqLLY5yhAA; __Secure-3PSIDTS=sidts-CjIBPVxjSkay-TCX41hur6WzroNXO94lTJ7n5QudQZkk9nQY_FADQVj3PlaKxefqLLY5yhAA; SIDCC=ABTWhQE2BAOGKon9noKtSXoKXtMCMmS3vioKj5lB4MHDZV7Xf2tqem-6V4qQQhLbdq0zo7x9JFk; __Secure-1PSIDCC=ABTWhQE1gdJbo17QFf5T4dfYYfc2MBIGiMwplZeq0_GXVYxaufycWN7FYXPmjUWWb30ecWNJkVkH; __Secure-3PSIDCC=ABTWhQHuUIQYr3DHqrhyfDuw9_I6fedbMO4BeGHtpwktvnzZNhv39B6Wq9tMfzbcWc5jdRh3UtI"
+    }
+  ],
+  "requestId": "33864",
+  "tabId": 1189010344,
+  "timeStamp": 1705406282516.818,
+  "type": "sub_frame",
+  "url": "https://drive.usercontent.google.com/download?id=1UiV8ScNguOG_yqN-aSV35Z4Zk-8EH-Gk&export=download&authuser=0&confirm=t&uuid=d942b479-9364-4f85-831a-c48f71064047&at=APZUnTX7lr4xhFA3nFdW5kHgSqxX:1705406281822"
+}

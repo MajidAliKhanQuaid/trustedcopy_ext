@@ -1,22 +1,21 @@
 body {
-  height: 400px;
-  width: 400px;
+  height: 581px;
+  width: 392px;
+  margin: 0px;
+  padding: 0px;
+  font-family: "Poppins";
+  font-size: 16px;
 }
 
-.d-flex {
-  display: flex;
-  gap: 15px;
+.downloaded_file {
+  margin-bottom: 15px;
+  padding: 5px;
+  box-shadow: 0px 0px 15px 1px #19bf7a;
 }
 
-.v-center {
-  justify-content: center;
-}
-
-.h-center {
-  align-items: center;
-}
-
-.full-center {
-  justify-content: center;
-  align-items: center;
+.downloaded_file > .upload_link {
+  color: #19bf7a;
+  font-weight: bold;
+  font-size: 15px;
+  background-color: transparent;
 }

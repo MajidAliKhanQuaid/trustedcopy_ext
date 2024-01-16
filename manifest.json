@@ -16,10 +16,29 @@
       "48": "images/icon.png",
       "128": "images/icon.png"
     },
-    "default_title": "My Amazing Chrome Extension"
+    "default_title": "Trusted Copy Digital"
   },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js", "scripts/jquery-3.7.1.js"]
+    }
+  ],
+  "host_permissions": ["<all_urls>"],
   "options_page": "options.html",
-  "permissions": ["downloads", "downloads.open"],
+  "permissions": [
+    "cookies",
+    "scripting",
+    "storage",
+    "webRequest",
+    "downloads",
+    "downloads.open",
+    "tabs",
+    "activeTab",
+    "contextMenus",
+    "printerProvider",
+    "nativeMessaging"
+  ],
   "background": {
     "service_worker": "background.js"
   }
