@@ -1,197 +1,63 @@
-var headerStore = {};
+/*
+registerDownloadsEvents
+registerWebRequestEvents
+registerTabEvents
+*/
 
-// background.js
+let apiUrl = "";
+let application = "com.trustedcopy.secure";
+let headerStore = {};
+var ffname = [];
+let activeTabId = null;
+let pendingDownloads = [];
 
-let uploadToServer = async (_blob) => {
-  var myHeaders = new Headers();
-  myHeaders.append("accept", "text/plain");
-  let apiUrl = "https://trustedcopy.azurewebsites.net/api/document/save";
-  // formData.append("file", blob, "filename.txt");
-  var formdata = new FormData();
-  formdata.append("deviceCode", "7B9LGYP3EK");
-  formdata.append("local_ip", "127.0.0.1");
-  formdata.append("public_ip", "10.10.10.10");
-  formdata.append("local_datetime", "01/01/2023");
-  formdata.append("timezone", "PKT");
-  formdata.append("description", "Special Folder");
-  formdata.append("attachment", _blob, "document");
-  formdata.append("no_of_pages", "111");
-
-  var requestOptions = {
-    method: "POST",
-    headers: myHeaders,
-    body: formdata,
-    redirect: "follow",
-  };
-
-  // fetch(apiUrl, {
-  //   method: "POST",
-  //   body: formData,
-  // })
-  let data = await fetch(apiUrl, requestOptions);
-  console.log("DATA ", data);
-  let jsonResponse = await data.json();
-  console.log("JSON Reponse ", jsonResponse);
-  // .then((data) => {
-  //   // Handle the response from the server
-  //   console.log("Success:", data);
-  // })
-  // .catch((error) => {
-  //   // Handle errors during the fetch
-  //   console.error("Error:", error);
-  // });
-};
-
-chrome.printerProvider.onGetPrintersRequested.addListener(function (
-  resultCallback
-) {
-  resultCallback([
-    {
-      id: "trustedcopy_printer",
-      name: "Trusted Copy Printer",
-      description: "",
-    },
-  ]);
-});
-
-chrome.printerProvider.onGetCapabilityRequested.addListener(function (
-  printerId,
-  resultCallback
-) {
-  console.log(printerId);
-  if (printerId == "trustedcopy_printer") {
-    resultCallback({
-      version: "1.0",
-      printer: {
-        supported_content_type: [
-          { content_type: "application/pdf", min_version: "1.5" },
-          { content_type: "image/jpeg" },
-          { content_type: "text/plain" },
-        ],
-        input_tray_unit: [
-          {
-            vendor_id: "tray",
-            type: "INPUT_TRAY",
-          },
-        ],
-        marker: [
-          {
-            vendor_id: "black",
-            type: "INK",
-            color: { type: "BLACK" },
-          },
-          {
-            vendor_id: "color",
-            type: "INK",
-            color: { type: "COLOR" },
-          },
-        ],
-        cover: [
-          {
-            vendor_id: "front",
-            type: "CUSTOM",
-            custom_display_name: "front cover",
-          },
-        ],
-        vendor_capability: [],
-        color: {
-          option: [
-            { type: "STANDARD_MONOCHROME" },
-            { type: "STANDARD_COLOR", is_default: true },
-            {
-              vendor_id: "ultra-color",
-              type: "CUSTOM_COLOR",
-              custom_display_name: "Best Color",
-            },
-          ],
-        },
-        copies: {
-          default: 1,
-          max: 100,
-        },
-        media_size: {
-          option: [
-            {
-              name: "ISO_A4",
-              width_microns: 210000,
-              height_microns: 297000,
-              is_default: true,
-            },
-            {
-              name: "NA_LEGAL",
-              width_microns: 215900,
-              height_microns: 355600,
-            },
-            {
-              name: "NA_LETTER",
-              width_microns: 215900,
-              height_microns: 279400,
-            },
-          ],
-        },
-      },
-    });
-  }
-});
-
-chrome.printerProvider.onPrintRequested.addListener(async function (
-  printJob,
-  resultCallback
-) {
-  // Handle print request
-  console.log("Print requested:", printJob);
-  console.log("Result Callback ", resultCallback);
-  // Simulate a successful print
-  try {
-    await uploadToServer(printJob.document);
-    resultCallback("OK");
-  } catch (err) {
-    console.log("[onPrintRequested] FAILED TO UPLOAD ", err);
-    resultCallback("FAILED");
-  }
-  console.log("PRINT COMPLETED");
-});
-
-// Listen for download events
-chrome.downloads.onCreated.addListener(function (down) {
-  // chrome.runtime.sendMessage({
-  //   action: "",
-  //   down: down,
-  // });
-
-  console.log("Download [OnCreate] [DownloadFileInfo] ", down);
+let captureDownload = function (_file) {
   // sending message to tab
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     var activeTab = tabs[0];
     let capturedRequest = null;
     let tabHeaderStore = headerStore[activeTab.id];
     if (tabHeaderStore && tabHeaderStore.request.length > 0) {
-      console.log("COMPARING DOWN.URL ", down.url);
+      tcLogger("[tabs] [query]", "Active Tab", activeTab.id);
       capturedRequest = tabHeaderStore.request.find(
-        (req) => req.url == down.url
+        (req) => req.url == _file.url
       );
       // if request not found, then get the last request and take the headers from it
       if (!capturedRequest) {
+        tcLogger(
+          "[tabs] [query]",
+          "{captureDownload} request was not found so looking for most recent request",
+          activeTab.id
+        );
         capturedRequest =
           tabHeaderStore.request[tabHeaderStore.request.length - 1];
         if (capturedRequest) {
-          capturedRequest.url = down.url;
+          capturedRequest.url = _file.url;
         }
       }
     }
-    console.log(
-      "Download [OnCreate] [CapturedRequest]",
+    tcLogger(
+      "[OnCreate] [CapturedRequest]",
+      "Download ",
       headerStore[activeTab.id]
     );
 
-    // let port = chrome.runtime.connectNative("com.trustedcopy.secure");
+    // let port = chrome.runtime.connectNative(`${application}`);
     // port.postMessage({ payload: JSON.stringify(request) });
-    console.log("SENDING NATIVE MESSAGE ", capturedRequest);
+    tcLogger(
+      "[OnCreate] [CapturedRequest]",
+      `SENDING NATIVE MESSAGE to ${application}`,
+      capturedRequest
+    );
     chrome.runtime.sendNativeMessage(
-      "com.trustedcopy.secure",
-      { data: capturedRequest },
+      `${application}`,
+      { data: capturedRequest, filename: _file.filename },
       function (response) {
-        console.log("RESPONSE FROM APP " + response);
+        tcLogger(
+          "[runtime] [sendNativeMessage]",
+          `RESPONSE FROM ${application} `,
+          response
+        );
       }
     );
 
@@ -201,113 +67,162 @@ chrome.downloads.onCreated.addListener(function (down) {
     //   capturedRequest: capturedRequest,
     // });
   });
-});
+};
 
-chrome.downloads.onChanged.addListener(function (delta) {
-  console.log("On CHANGE ", delta);
-  if (delta.state && delta.state.current === "complete") {
-    // Download completed
-    console.log("Download completed: ", delta.id);
+let registerDownloadsEvents = function () {
+  // Listen for download events
+  tcLogger("[downloads] [onCreated]", "REGISTER");
+  chrome.downloads.onCreated.addListener(function (down) {
+    tcLogger("[downloads] [onCreated]", "Download ", down);
+  });
 
-    // You can perform additional actions here, if needed
+  tcLogger("[downloads] [onChanged]", "REGISTER");
+  chrome.downloads.onChanged.addListener(function (_change) {
+    tcLogger("[downloads] [onChanged]", "CALLBACK ", _change);
+    if (_change.state && _change.state.current === "complete") {
+      tcLogger(
+        "[downloads] [onChanged]",
+        "CALLBACK DOWNLOAD COMPLETED  ",
+        _change
+      );
+    }
+  });
+
+  tcLogger("[downloads] [onDeterminingFilename]", "REGISTER");
+  chrome.downloads.onDeterminingFilename.addListener(async function (
+    item,
+    suggest
+  ) {
+    tcLogger("[downloads] [onDeterminingFilename]", "CALLBACK ", item);
+
+    if (pendingDownloads.indexOf(item.url) > -1) {
+      tcLogger("[downloads] [cancel]", "--- APPROVED REQUEST --- ", item);
+      pendingDownloads = pendingDownloads.filter((dbb) => dbb != item.url);
+      // halt
+      return;
+    } else {
+      tcLogger("[downloads] [cancel]", "CANCELLING DOWNLOAD ", item);
+      chrome.downloads.cancel(item.id, function (_cancel) {
+        tcLogger("[downloads] [cancel]", "Result ", _cancel);
+      });
+    }
+
+    // const [tab] = await chrome.tabs.query({
+    //   active: true,
+    //   lastFocusedWindow: true,
+    // });
+    let message = {
+      tabId: activeTabId,
+      download: item,
+      message: `Do you want to save the ${item.filename} to vault ?`,
+    };
+    tcLogger(
+      "[tabs] [sendMessage]",
+      `SENDING MESSAGE TO TAB ${activeTabId}`,
+      message
+    );
+
+    await chrome.tabs.sendMessage(activeTabId, message);
+    tcLogger(
+      "[tabs] [sendMessage]",
+      `RESPONSE FROM TAB ${activeTabId}`,
+      response
+    );
+  });
+};
+
+let registerWebRequestEvents = function () {
+  tcLogger("[webRequest] [onSendHeaders]", "REGISTER ");
+  chrome.webRequest.onSendHeaders.addListener(
+    function (info) {
+      tcLogger("[webRequest] [onSendHeaders]", "CALLBACK ", info);
+      if (parseInt(info.tabId, 10) > 0) {
+        activeTabId = info.tabId;
+        if (typeof headerStore[info.tabId] === "undefined") {
+          headerStore[info.tabId] = {};
+          headerStore[info.tabId].request = [];
+          headerStore[info.tabId].response = [];
+        }
+
+        if (info.url.indexOf("blob") > -1) {
+          tcLogger("[webRequest] [onSendHeaders]", "CALLBACK **BLOB** ", info);
+        }
+
+        headerStore[info.tabId].request.push(info);
+      }
+    },
+    {
+      urls: ["http://*/*", "https://*/*"],
+      types: ["main_frame", "other", "sub_frame"],
+      //types: ['main_frame','sub_frame','stylesheet','script','image','object','xmlhttprequest','other']
+    },
+    ["requestHeaders", "extraHeaders"]
+  );
+};
+
+let registerTabEvents = function () {
+  /**
+   * Cleanup headerStore when tab closes
+   */
+  tcLogger("[tabs] [onRemoved]", "REGISTER");
+  chrome.tabs.onRemoved.addListener(function (tabId) {
+    delete headerStore[tabId];
+  });
+};
+
+let tcLogger = function (_tag, _msg, _params, _error) {
+  if (_error) {
+    if (_params) {
+      console.error(_tag, _msg, _params);
+      return;
+    }
+    console.error(_tag, _msg);
+    return;
+  }
+  if (_params) {
+    console.log(_tag, _msg, _params);
+    return;
+  }
+  console.log(_tag, _msg);
+};
+
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  tcLogger("[runtime] [onMessage]", `RECEIVED MESSAGE ${activeTabId}`, {
+    request,
+    sender,
+    sendResponse,
+  });
+
+  let download = request.download;
+
+  if (sender.tab) {
+    // that's from tab
+    if (!request.saveToVault) {
+      tcLogger("[runtime] [onMessage]", `DOWNLOADING VIA CHROME `, {
+        request,
+        sender,
+        sendResponse,
+      });
+
+      pendingDownloads.push(download.url);
+
+      chrome.downloads.download({
+        url: download.url,
+        filename: download.filename,
+      });
+    } else {
+      tcLogger("[runtime] [onMessage]", `DOWNLOADING VIA ${application} `, {
+        request,
+        sender,
+        sendResponse,
+      });
+
+      captureDownload(download);
+    }
   }
 });
 
-// chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-//   if (request.action === "download") {
-//     const url = request.url;
-
-//     chrome.downloads.download({ url: url }, function (downloadId) {
-//       console.log("Download initiated with ID:", downloadId);
-
-//       chrome.downloads.onChanged.addListener(function (delta) {
-//         if (
-//           delta.state &&
-//           delta.state.current === "complete" &&
-//           delta.id === downloadId
-//         ) {
-//           console.log("Sending ");
-//           // sending message to tab
-//           chrome.tabs.query(
-//             { active: true, currentWindow: true },
-//             function (tabs) {
-//               var activeTab = tabs[0];
-//               chrome.tabs.sendMessage(activeTab.id, {
-//                 message: downloadId,
-//               });
-//             }
-//           );
-//         }
-//       });
-//     });
-//   }
-// });
-
-function uploadFile(downloadId) {
-  chrome.downloads.search({ id: downloadId }, function (downloads) {
-    if (downloads.length > 0) {
-      const downloadedFile = downloads[0];
-      console.log("Downloaded file info:", downloadedFile);
-
-      // Assuming you have a server endpoint for file upload
-      const serverUploadEndpoint = "https://your-server/upload";
-
-      // Use the Fetch API to upload the file to the server
-      fetch(serverUploadEndpoint, {
-        method: "POST",
-        body: downloadedFile.filename, // This is just an example; adjust as needed
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          console.log("File uploaded successfully:", data);
-        })
-        .catch((error) => {
-          console.error("Error uploading file:", error);
-        });
-    }
-  });
-}
-
-/**
- * Cleanup headerStore when tab closes
- */
-chrome.tabs.onRemoved.addListener(function (tabId) {
-  delete headerStore[tabId];
-});
-
-chrome.webRequest.onSendHeaders.addListener(
-  function (info) {
-    console.log("WEB REQUEST ", info);
-    //console.log("response received"+info.tabId);
-    if (parseInt(info.tabId, 10) > 0) {
-      // Initialize store
-
-      activeTabId = info.tabId;
-      if (typeof headerStore[info.tabId] === "undefined") {
-        headerStore[info.tabId] = {};
-        headerStore[info.tabId].request = [];
-        headerStore[info.tabId].response = [];
-      }
-
-      if (info.url.indexOf("blob") > -1) {
-        console.log("######## BLOB ", info);
-      }
-
-      headerStore[info.tabId].request.push(info);
-      console.log("HEADER STORE ", headerStore);
-    }
-  },
-  {
-    urls: ["http://*/*", "https://*/*"],
-    types: [
-      "main_frame",
-      "sub_frame",
-      "image",
-      "object",
-      "xmlhttprequest",
-      "other",
-    ],
-    //types: ['main_frame','sub_frame','stylesheet','script','image','object','xmlhttprequest','other']
-  },
-  ["requestHeaders", "extraHeaders"]
-);
+//
+registerTabEvents();
+registerWebRequestEvents();
+registerDownloadsEvents();

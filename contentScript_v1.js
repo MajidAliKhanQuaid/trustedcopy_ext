@@ -1,30 +1,25 @@
 function register() {
   // background.js
-  tcLogger("[runtime] [onMessage]", "REGISTER ");
-  chrome.runtime.onMessage.addListener(
-    async (request, sender, sendResponse) => {
-      tcLogger("[runtime] [onMessage]", "CALLBACK ", {
-        request,
-        sender,
-        sendResponse,
-      });
+  console.log("[REGISTERED EVENT] runtime.onMessage");
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log("******** Received Message ***********");
+    console.log("REQUEST ", request);
+    console.log("SENDER ", sender);
+    console.log("SEND RESPONSE ", sendResponse);
+    let userConfirmation = confirm(
+      "Do you want to save the file to the Vault?"
+    );
+    if (userConfirmation) {
+      // readFileFromServerAndUpload(request);
 
-      let userConfirmation = confirm(
-        "Do you want to save the file to the Vault?"
-      );
-      console.log(
-        "[runtime] [onMessage]",
-        "CALLBACK USER_SELECTION",
-        userConfirmation
-      );
-
-      await chrome.runtime.sendMessage({
-        tabId: request.tabId,
-        download: request.download,
-        saveToVault: userConfirmation,
-      });
+      // console.log("SENDING MESSAGE");
+      // let port = chrome.runtime.connectNative("com.trustedcopy.secure");
+      // port.postMessage({ text: JSON.stringify(request) });
+      console.log("SENDING MESSAGE");
+    } else {
+      console.log("User clicked Cancel");
     }
-  );
+  });
 }
 
 function readFileFromServerAndUpload(_req) {
@@ -97,21 +92,5 @@ function uploadFileToServer(destinationUrl, fileBlob) {
       console.error("[uploadFileToServer] ERROR:", error);
     });
 }
-
-let tcLogger = function (_tag, _msg, _params, _error) {
-  if (_error) {
-    if (_params) {
-      console.error(_tag, _msg, _params);
-      return;
-    }
-    console.error(_tag, _msg);
-    return;
-  }
-  if (_params) {
-    console.log(_tag, _msg, _params);
-    return;
-  }
-  console.log(_tag, _msg);
-};
 
 register();
