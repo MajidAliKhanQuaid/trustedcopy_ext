@@ -13,60 +13,73 @@ let pendingDownloads = [];
 
 let captureDownload = function (_file) {
   // sending message to tab
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    var activeTab = tabs[0];
-    let capturedRequest = null;
-    let tabHeaderStore = headerStore[activeTab.id];
-    if (tabHeaderStore && tabHeaderStore.request.length > 0) {
-      tcLogger("[tabs] [query]", "Active Tab", activeTab.id);
-      capturedRequest = tabHeaderStore.request.find(
-        (req) => req.url == _file.url
-      );
-      // if request not found, then get the last request and take the headers from it
-      if (!capturedRequest) {
-        tcLogger(
-          "[tabs] [query]",
-          "{captureDownload} request was not found so looking for most recent request",
-          activeTab.id
+  chrome.tabs.query(
+    { active: true, currentWindow: true },
+    async function (tabs) {
+      var activeTab = tabs[0];
+      let capturedRequest = null;
+      let tabHeaderStore = headerStore[activeTab.id];
+      if (tabHeaderStore && tabHeaderStore.request.length > 0) {
+        tcLogger("[tabs] [query]", "Active Tab", activeTab.id);
+        capturedRequest = tabHeaderStore.request.find(
+          (req) => req.url == _file.url
         );
-        capturedRequest =
-          tabHeaderStore.request[tabHeaderStore.request.length - 1];
-        if (capturedRequest) {
-          capturedRequest.url = _file.url;
+        // if request not found, then get the last request and take the headers from it
+        if (!capturedRequest) {
+          tcLogger(
+            "[tabs] [query]",
+            "{captureDownload} request was not found so looking for most recent request",
+            activeTab.id
+          );
+          capturedRequest =
+            tabHeaderStore.request[tabHeaderStore.request.length - 1];
+          if (capturedRequest) {
+            capturedRequest.url = _file.url;
+          }
         }
       }
-    }
-    tcLogger(
-      "[OnCreate] [CapturedRequest]",
-      "Download ",
-      headerStore[activeTab.id]
-    );
+      tcLogger(
+        "[OnCreate] [CapturedRequest]",
+        "Download ",
+        headerStore[activeTab.id]
+      );
 
-    // let port = chrome.runtime.connectNative(`${application}`);
-    // port.postMessage({ payload: JSON.stringify(request) });
-    tcLogger(
-      "[OnCreate] [CapturedRequest]",
-      `SENDING NATIVE MESSAGE to ${application}`,
-      capturedRequest
-    );
-    chrome.runtime.sendNativeMessage(
-      `${application}`,
-      { data: capturedRequest, filename: _file.filename },
-      function (response) {
-        tcLogger(
-          "[runtime] [sendNativeMessage]",
-          `RESPONSE FROM ${application} `,
-          response
+      // let port = chrome.runtime.connectNative(`${application}`);
+      // port.postMessage({ payload: JSON.stringify(request) });
+      let user = await chrome.storage.local.get(["user"]);
+      tcLogger(
+        "[OnCreate] [CapturedRequest]",
+        `SENDING NATIVE MESSAGE to ${application}`,
+        {
+          capturedRequest,
+          user,
+        }
+      );
+
+      if (user) {
+        console.log("BEFORE ", user.user);
+        let userObject = JSON.parse(user.user);
+        console.log("AFTER ", userObject);
+        chrome.runtime.sendNativeMessage(
+          `${application}`,
+          { data: capturedRequest, user: userObject, filename: _file.filename },
+          function (response) {
+            tcLogger(
+              "[runtime] [sendNativeMessage]",
+              `RESPONSE FROM ${application} `,
+              response
+            );
+          }
         );
       }
-    );
 
-    // chrome.tabs.sendMessage(activeTab.id, {
-    //   message: "Received a document for upload",
-    //   download: down,
-    //   capturedRequest: capturedRequest,
-    // });
-  });
+      // chrome.tabs.sendMessage(activeTab.id, {
+      //   message: "Received a document for upload",
+      //   download: down,
+      //   capturedRequest: capturedRequest,
+      // });
+    }
+  );
 };
 
 let registerDownloadsEvents = function () {
@@ -95,6 +108,11 @@ let registerDownloadsEvents = function () {
   ) {
     tcLogger("[downloads] [onDeterminingFilename]", "CALLBACK ", item);
 
+    if (item.finalUrl.startsWith("blob")) {
+      // for now; ignoring all blob downloads
+      return;
+    }
+
     if (pendingDownloads.indexOf(item.url) > -1) {
       tcLogger("[downloads] [cancel]", "--- APPROVED REQUEST --- ", item);
       pendingDownloads = pendingDownloads.filter((dbb) => dbb != item.url);
@@ -112,6 +130,8 @@ let registerDownloadsEvents = function () {
     //   lastFocusedWindow: true,
     // });
     let message = {
+      source: "TC#BG",
+      action: "DOWNLOAD_APPROVAL",
       tabId: activeTabId,
       download: item,
       message: `Do you want to save the ${item.filename} to vault ?`,
@@ -123,11 +143,7 @@ let registerDownloadsEvents = function () {
     );
 
     await chrome.tabs.sendMessage(activeTabId, message);
-    tcLogger(
-      "[tabs] [sendMessage]",
-      `RESPONSE FROM TAB ${activeTabId}`,
-      response
-    );
+    tcLogger("[tabs] [sendMessage]", `RESPONSE FROM TAB ${activeTabId}`);
   });
 };
 
@@ -186,38 +202,54 @@ let tcLogger = function (_tag, _msg, _params, _error) {
   console.log(_tag, _msg);
 };
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(async function (
+  request,
+  sender,
+  sendResponse
+) {
   tcLogger("[runtime] [onMessage]", `RECEIVED MESSAGE ${activeTabId}`, {
     request,
     sender,
     sendResponse,
   });
 
-  let download = request.download;
+  if (request.source == "TC#CS" && request.action == "USER_INFO") {
+    // saving user login info
+    if (request.user) {
+      await chrome.storage.local.set({ user: request.user });
+    }
+  } else if (
+    request.source == "TC#CS" &&
+    request.action == "DOWNLOAD_APPROVAL"
+  ) {
+    // starting the download process
 
-  if (sender.tab) {
-    // that's from tab
-    if (!request.saveToVault) {
-      tcLogger("[runtime] [onMessage]", `DOWNLOADING VIA CHROME `, {
-        request,
-        sender,
-        sendResponse,
-      });
+    let download = request.download;
 
-      pendingDownloads.push(download.url);
+    if (sender.tab) {
+      // that's from tab
+      if (!request.saveToVault) {
+        tcLogger("[runtime] [onMessage]", `DOWNLOADING VIA CHROME `, {
+          request,
+          sender,
+          sendResponse,
+        });
 
-      chrome.downloads.download({
-        url: download.url,
-        filename: download.filename,
-      });
-    } else {
-      tcLogger("[runtime] [onMessage]", `DOWNLOADING VIA ${application} `, {
-        request,
-        sender,
-        sendResponse,
-      });
+        pendingDownloads.push(download.url);
 
-      captureDownload(download);
+        chrome.downloads.download({
+          url: download.url,
+          filename: download.filename,
+        });
+      } else {
+        tcLogger("[runtime] [onMessage]", `DOWNLOADING VIA ${application} `, {
+          request,
+          sender,
+          sendResponse,
+        });
+
+        captureDownload(download);
+      }
     }
   }
 });
