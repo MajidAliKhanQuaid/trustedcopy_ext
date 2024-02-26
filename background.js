@@ -1,17 +1,34 @@
 /*
-registerDownloadsEvents
-registerWebRequestEvents
-registerTabEvents
+<consts_variables>
 */
 
-let apiUrl = "";
-let application = "com.trustedcopy.secure";
+const HOST_API = "https://localhost:44351";
+const HOST_DESKTOP_APP = "com.trustedcopy.secure";
+
+const SCRIPTS = {
+  BG_SCRIPT: "TC#BG",
+  CONTENT_SCRIPT: "TC#CS",
+  POPUP_SCRIPT: "TC#PP",
+  APP_SCRIPT: "TC#APP",
+};
+
+const ACTIONS = {
+  DOWNLOAD_APPROVAL: "DOWNLOAD_APPROVAL",
+  DOWNLOAD_STATUS: "DOWNLOAD_STATUS",
+  USER_INFO: "USER_INFO",
+};
+
 let headerStore = {};
-var ffname = [];
 let activeTabId = null;
 let pendingDownloads = [];
+let port = null;
+let isConnected = false;
 
-let captureDownload = function (_file) {
+/*
+</consts_variables>
+*/
+
+let captureDownload = function (_request, _file) {
   // sending message to tab
   chrome.tabs.query(
     { active: true, currentWindow: true },
@@ -44,34 +61,44 @@ let captureDownload = function (_file) {
         headerStore[activeTab.id]
       );
 
-      // let port = chrome.runtime.connectNative(`${application}`);
+      // let port = chrome.runtime.connectNative(`${HOST_DESKTOP_APP}`);
       // port.postMessage({ payload: JSON.stringify(request) });
       let user = await chrome.storage.local.get(["user"]);
-      tcLogger(
-        "[OnCreate] [CapturedRequest]",
-        `SENDING NATIVE MESSAGE to ${application}`,
-        {
-          capturedRequest,
-          user,
-        }
-      );
-
       if (user) {
-        console.log("BEFORE ", user.user);
         let userObject = JSON.parse(user.user);
-        console.log("AFTER ", userObject);
-        chrome.runtime.sendNativeMessage(
-          `${application}`,
-          { data: capturedRequest, user: userObject, filename: _file.filename },
-          function (response) {
-            tcLogger(
-              "[runtime] [sendNativeMessage]",
-              `RESPONSE FROM ${application} `,
-              response
-            );
-          }
+        // chrome.runtime.sendNativeMessage(
+        //   `${HOST_DESKTOP_APP}`,
+        //   { data: capturedRequest, user: userObject, filename: _file.filename },
+        //   function (response) {
+        //     tcLogger(
+        //       "[runtime] [sendNativeMessage]",
+        //       `RESPONSE FROM ${HOST_DESKTOP_APP} `,
+        //       response
+        //     );
+        //   }
+        // );
+        let dataMessage = {
+          data: capturedRequest,
+          user: userObject,
+          filename: _file.filename,
+          request: _request,
+        };
+
+        tcLogger(
+          "[OnCreate] [CapturedRequest]",
+          `SENDING NATIVE MESSAGE to ${HOST_DESKTOP_APP}`,
+          dataMessage
         );
+        if (!isConnected) {
+          subscribeToNativeHost(dataMessage);
+        } else {
+          port.postMessage(dataMessage);
+        }
+      } else {
+        // USER SESSION NOT FOUND
       }
+
+      tabHeaderStore = [];
 
       // chrome.tabs.sendMessage(activeTab.id, {
       //   message: "Received a document for upload",
@@ -130,8 +157,9 @@ let registerDownloadsEvents = function () {
     //   lastFocusedWindow: true,
     // });
     let message = {
-      source: "TC#BG",
-      action: "DOWNLOAD_APPROVAL",
+      source: SCRIPTS.BG_SCRIPT,
+      action: ACTIONS.DOWNLOAD_APPROVAL,
+      target: SCRIPTS.CONTENT_SCRIPT,
       tabId: activeTabId,
       download: item,
       message: `Do you want to save the ${item.filename} to vault ?`,
@@ -213,14 +241,17 @@ chrome.runtime.onMessage.addListener(async function (
     sendResponse,
   });
 
-  if (request.source == "TC#CS" && request.action == "USER_INFO") {
+  if (
+    request.source == SCRIPTS.APP_SCRIPT &&
+    request.action == ACTIONS.USER_INFO
+  ) {
     // saving user login info
     if (request.user) {
       await chrome.storage.local.set({ user: request.user });
     }
   } else if (
-    request.source == "TC#CS" &&
-    request.action == "DOWNLOAD_APPROVAL"
+    request.source == SCRIPTS.CONTENT_SCRIPT &&
+    request.action == ACTIONS.DOWNLOAD_APPROVAL
   ) {
     // starting the download process
 
@@ -242,19 +273,101 @@ chrome.runtime.onMessage.addListener(async function (
           filename: download.filename,
         });
       } else {
-        tcLogger("[runtime] [onMessage]", `DOWNLOADING VIA ${application} `, {
-          request,
-          sender,
-          sendResponse,
-        });
+        tcLogger(
+          "[runtime] [onMessage]",
+          `DOWNLOADING VIA ${HOST_DESKTOP_APP} `,
+          {
+            request,
+            sender,
+            sendResponse,
+          }
+        );
 
-        captureDownload(download);
+        let documentRequest = {
+          requestId: request.requestId,
+          type: parseInt(request.documentType),
+        };
+
+        captureDownload(documentRequest, download);
       }
     }
   }
 });
 
+function subscribeToNativeHost(_data) {
+  tcLogger("[subscribeToNativeHost]", "starting to connect to native host");
+  try {
+    // Connect to the native application
+    port = chrome.runtime.connectNative(HOST_DESKTOP_APP);
+  } catch {
+    console.log("FAILED TO CONNECT TO NATIVE HOST");
+  }
+
+  // Add listener for the onConnect event
+  // port.onConnect.addListener(function (nativePort) {
+  isConnected = true;
+
+  tcLogger(
+    "[subscribeToNativeHost] [connected to app]",
+    "Extension connected to app"
+  );
+
+  if (_data) {
+    // Send a message to the native application
+    port.postMessage(_data);
+  }
+
+  tcLogger(
+    "[subscribeToNativeHost] [connected to app]",
+    "Sent message ",
+    _data
+  );
+
+  // console.log("Connected to native application");
+
+  // Send a message to the native application
+  // nativePort.postMessage({ message: "Hello from Chrome Extension!" });
+
+  // Listen for messages from the native application
+  port.onMessage.addListener(async function (msg) {
+    tcLogger(
+      "[subscribeToNativeHost] [received message from app]",
+      "Received message ",
+      msg
+    );
+    if (msg) {
+      let msgToSend = {
+        source: SCRIPTS.BG_SCRIPT,
+        action: ACTIONS.DOWNLOAD_STATUS,
+        target: SCRIPTS.CONTENT_SCRIPT,
+        tabId: activeTabId,
+        message: msg,
+      };
+      tcLogger(
+        "[tabs] [sendMessage]",
+        `SENDING MESSAGE TO TAB ${activeTabId}`,
+        msgToSend
+      );
+
+      await chrome.tabs.sendMessage(activeTabId, msgToSend);
+    }
+  });
+
+  // Handle disconnection from the native application
+  port.onDisconnect.addListener(function () {
+    isConnected = false;
+    port = null;
+
+    tcLogger(
+      "[subscribeToNativeHost] [disconnected from app]",
+      "Disconnection "
+    );
+  });
+  // });
+}
+
 //
 registerTabEvents();
 registerWebRequestEvents();
 registerDownloadsEvents();
+subscribeToNativeHost();

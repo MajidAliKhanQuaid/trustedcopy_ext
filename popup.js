@@ -5,13 +5,16 @@ const PAY_STUB = 2;
 const DEGREE_TRANSCRIPT = 3;
 const W2_TAX_RETURN = 4;
 
-const apiHost = "https://localhost:44351";
-let documentSaveUrl = `${apiHost}/api/document/save`;
-let pendingUrl = `${apiHost}/api/document/requests/pending`;
+const HOST_API = "https://localhost:44351";
+const DOC_SAVE_URL = `${HOST_API}/api/document/save`;
+const PENDING_REQUESTS_URL = `${HOST_API}/api/document/requests/pending`;
 
-const frontendHost = "http://localhost:3000";
-const signInUrl = `${frontendHost}/login`;
-const vaultUrl = `${frontendHost}/document/requests`;
+const HOST_FE = "http://localhost:3000";
+const SIGN_IN_URL = `${HOST_FE}/login`;
+const SIGN_UP_URL = `${HOST_FE}/signup`;
+const VAULT_URL = `${HOST_FE}/document/requests`;
+
+console.log("LOCALSTORAGE ", Object.entries(chrome.storage.local));
 // document.addEventListener("DOMContentLoaded", async () => {
 //   console.log("FROM PAGE ", fromPageLocalStore);
 //   try {
@@ -70,7 +73,7 @@ function getDocumentType(_type) {
 
 async function getPendingRequests(_token) {
   try {
-    const response = await fetch(pendingUrl, {
+    const response = await fetch(PENDING_REQUESTS_URL, {
       headers: {
         Authorization: `Bearer ${_token}`,
       },
@@ -93,23 +96,17 @@ async function getPendingRequests(_token) {
 
 jQuery(async function () {
   // let user = localStorage.getItem("user");
+  // await chrome.storage.local.set({ user: null });
   let user = await chrome.storage.local.get(["user"]);
   if (user) {
     console.log("[Popup] | USER FOUND ", user);
+    console.log("[Popup] | USER FOUND ", user.user);
     try {
       let userInfo = JSON.parse(user.user);
       let isLoggedIn = userInfo;
       console.log("[Popup] Is Logged In ", isLoggedIn);
       if (isLoggedIn) {
-        let pendingRequests = await getPendingRequests(userInfo.access_token);
-        console.log("[Popup] ** Pending Request ", pendingRequests);
-        let lstRequests = pendingRequests.map(function (req) {
-          return `<div style="border: solid 1px black; padding: 5px; margin: 2px;">
-          <div><a href="">${req.code}</a></div>
-          <div>${getDocumentTypes(req.type)}</div>
-          </div>`;
-        });
-        lstRequests.join("");
+        // lstRequests.join("");
 
         // let lstOptions = pendingRequests.map(function (req) {
         //   return `<option value="${req.id}">${req.code}</option>`;
@@ -118,7 +115,21 @@ jQuery(async function () {
         // let select = `<select>${options}</select>`;
         $(".tc-login-screen").removeClass("d-flex").addClass("d-none");
         $(".tc-docs-screen").removeClass("d-none").addClass("d-flex");
-        $(".tc-pending-requests").html(lstRequests.join(""));
+
+        $(".tc-pending-requests").html("Loading ...");
+        let pendingRequests = await getPendingRequests(userInfo.access_token);
+        console.log("[Popup] ** Pending Request ", pendingRequests);
+        if (pendingRequests.length == 0) {
+          $(".tc-pending-requests").html("No requests found.");
+        } else {
+          let lstRequests = pendingRequests.map(function (req) {
+            return `<div style="border: solid 1px black; padding: 5px; margin: 2px;">
+          <div><a href="${HOST_FE}/document/request/${req.id}" target="blank">${req.code}</a></div>
+          <div>${getDocumentTypes(req.type)}</div>
+          </div>`;
+          });
+          $(".tc-pending-requests").html(lstRequests.join(""));
+        }
       } else {
         $(".tc-login-screen").removeClass("d-none").addClass("d-flex");
         $(".tc-docs-screen").removeClass("d-flex").addClass("d-none");
@@ -168,16 +179,20 @@ jQuery(async function () {
   });
 
   $(document).on("click", ".btnShowVault", function () {
-    chrome.tabs.create({ url: vaultUrl });
+    chrome.tabs.create({ url: VAULT_URL });
   });
 
+  // $(document).on("click", ".btnSignUp", function () {
+  //   $(".tc-login-screen").removeClass("d-flex").addClass("d-none");
+  //   $(".tc-docs-screen").removeClass("d-none").addClass("d-flex");
+  // });
+
   $(document).on("click", ".btnSignUp", function () {
-    $(".tc-login-screen").removeClass("d-flex").addClass("d-none");
-    $(".tc-docs-screen").removeClass("d-none").addClass("d-flex");
+    chrome.tabs.create({ url: SIGN_UP_URL });
   });
 
   $(document).on("click", ".lnk_SignIn", function () {
-    chrome.tabs.create({ url: signInUrl });
+    chrome.tabs.create({ url: SIGN_IN_URL });
   });
 
   $(document).on("click", ".btnDownloadFile", function () {

@@ -18,6 +18,12 @@
     },
     "default_title": "Trusted Copy Digital"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["images/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
@@ -36,7 +42,6 @@
     "tabs",
     "activeTab",
     "contextMenus",
-    "printerProvider",
     "nativeMessaging"
   ],
   "background": {
