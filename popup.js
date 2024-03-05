@@ -79,6 +79,12 @@ async function getPendingRequests(_token) {
       },
     });
 
+    console.log("RESPONSE ", response);
+    if (response.status == 401) {
+      await chrome.storage.local.remove(["user"]);
+      alert("TOKEN has been removed");
+    }
+
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
@@ -125,7 +131,7 @@ jQuery(async function () {
           let lstRequests = pendingRequests.map(function (req) {
             return `<div style="border: solid 1px black; padding: 5px; margin: 2px;">
           <div><a href="${HOST_FE}/document/request/${req.id}" target="blank">${req.code}</a></div>
-          <div>${getDocumentTypes(req.type)}</div>
+          <div>${req.type}</div>
           </div>`;
           });
           $(".tc-pending-requests").html(lstRequests.join(""));

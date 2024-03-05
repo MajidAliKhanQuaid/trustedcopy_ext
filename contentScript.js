@@ -19,6 +19,7 @@ const ACTIONS = {
   DOWNLOAD_APPROVAL: "DOWNLOAD_APPROVAL",
   DOWNLOAD_STATUS: "DOWNLOAD_STATUS",
   USER_INFO: "USER_INFO",
+  NATIVE_HOST_CONNECT: "NATIVE_HOST_CONNECT",
 };
 
 const HOST_FE = "http://localhost:3000";
@@ -155,57 +156,58 @@ function reconnectWebSocket() {
 
 function getPendingRequestsUI() {
   let elements = pendingRequests.map(function (pr) {
-    return pr.type.map(function (prType) {
-      console.log("PENDING REQUEST ", pr);
-      console.log("PENDING REQUEST TYPE ", prType);
-      // Create the main container div with class "tc__pr"
-      const tcPrDiv = document.createElement("div");
-      tcPrDiv.classList.add("tc__pr");
+    // return pr.type.map(function (prType) {
+    var prType = pr.type;
+    console.log("PENDING REQUEST ", pr);
+    console.log("PENDING REQUEST TYPE ", prType);
+    // Create the main container div with class "tc__pr"
+    const tcPrDiv = document.createElement("div");
+    tcPrDiv.classList.add("tc__pr");
 
-      // Create the div with class "tc__pr_headings"
-      const tcPrHeadingsDiv = document.createElement("div");
-      tcPrHeadingsDiv.classList.add("tc__pr_headings");
+    // Create the div with class "tc__pr_headings"
+    const tcPrHeadingsDiv = document.createElement("div");
+    tcPrHeadingsDiv.classList.add("tc__pr_headings");
 
-      // Create the div with class "tc__pr_org_name" and append it to "tc__pr_headings"
-      const tcPrRequestCodeDiv = document.createElement("div");
-      tcPrRequestCodeDiv.classList.add("tc__pr_req_code");
-      tcPrRequestCodeDiv.innerText = pr.code;
-      tcPrHeadingsDiv.appendChild(tcPrRequestCodeDiv);
+    // Create the div with class "tc__pr_org_name" and append it to "tc__pr_headings"
+    const tcPrRequestCodeDiv = document.createElement("div");
+    tcPrRequestCodeDiv.classList.add("tc__pr_req_code");
+    tcPrRequestCodeDiv.innerText = pr.code;
+    tcPrHeadingsDiv.appendChild(tcPrRequestCodeDiv);
 
-      // Create the div with class "tc__pr_org_name" and append it to "tc__pr_headings"
-      const tcPrOrgNameDiv = document.createElement("div");
-      tcPrOrgNameDiv.classList.add("tc__pr_org_name");
-      tcPrOrgNameDiv.innerText = pr.requestingOrg;
-      tcPrHeadingsDiv.appendChild(tcPrOrgNameDiv);
+    // Create the div with class "tc__pr_org_name" and append it to "tc__pr_headings"
+    const tcPrOrgNameDiv = document.createElement("div");
+    tcPrOrgNameDiv.classList.add("tc__pr_org_name");
+    tcPrOrgNameDiv.innerText = pr.requestingOrg;
+    tcPrHeadingsDiv.appendChild(tcPrOrgNameDiv);
 
-      // Create the div with class "tc__pr_doc_type" and append it to "tc__pr_headings"
-      const tcPrDocTypeDiv = document.createElement("div");
-      tcPrDocTypeDiv.classList.add("tc__pr_doc_type");
-      let docType = types.find((t) => t.value == prType);
-      if (docType) {
-        tcPrDocTypeDiv.innerText = docType.label;
-      }
-      tcPrHeadingsDiv.appendChild(tcPrDocTypeDiv);
+    // Create the div with class "tc__pr_doc_type" and append it to "tc__pr_headings"
+    const tcPrDocTypeDiv = document.createElement("div");
+    tcPrDocTypeDiv.classList.add("tc__pr_doc_type");
+    let docType = types.find((t) => t.value == prType);
+    if (docType) {
+      tcPrDocTypeDiv.innerText = docType.label;
+    }
+    tcPrHeadingsDiv.appendChild(tcPrDocTypeDiv);
 
-      // Create the div with class "tc__pr_selection"
-      const tcPrSelectionDiv = document.createElement("div");
-      tcPrSelectionDiv.classList.add("tc__pr_selection");
+    // Create the div with class "tc__pr_selection"
+    const tcPrSelectionDiv = document.createElement("div");
+    tcPrSelectionDiv.classList.add("tc__pr_selection");
 
-      // Create the input element with type checkbox and append it to "tc__pr_selection"
-      // const checkboxInput = document.createElement("input");
-      // checkboxInput.setAttribute("type", "checkbox");
-      // checkboxInput.setAttribute("class", "");
-      // checkboxInput.setAttribute("data-id", "");
-      const checkboxInput = tcDom.getCheckbox(prType, pr.id);
-      // console.log("CHECKBOX ", checkboxInput);
-      tcPrSelectionDiv.appendChild(checkboxInput);
+    // Create the input element with type checkbox and append it to "tc__pr_selection"
+    // const checkboxInput = document.createElement("input");
+    // checkboxInput.setAttribute("type", "checkbox");
+    // checkboxInput.setAttribute("class", "");
+    // checkboxInput.setAttribute("data-id", "");
+    const checkboxInput = tcDom.getCheckbox(prType, pr.id);
+    // console.log("CHECKBOX ", checkboxInput);
+    tcPrSelectionDiv.appendChild(checkboxInput);
 
-      // Append "tc__pr_headings" and "tc__pr_selection" to the main container "tc__pr"
-      tcPrDiv.appendChild(tcPrHeadingsDiv);
-      tcPrDiv.appendChild(tcPrSelectionDiv);
+    // Append "tc__pr_headings" and "tc__pr_selection" to the main container "tc__pr"
+    tcPrDiv.appendChild(tcPrHeadingsDiv);
+    tcPrDiv.appendChild(tcPrSelectionDiv);
 
-      return tcPrDiv;
-    });
+    return tcPrDiv;
+    // });
   });
 
   console.log("ELEMENTS ", elements);
@@ -436,8 +438,8 @@ function createModalDialog(_title, _reponsePayload) {
           ${getPendingRequestsUI().outerHTML}
         </div>
         <div class="tc__btns_container">
-          <button class="tc__btn" id="tc__close_modal">Cancel</button>
-          <button class="tc__btn" id="tc__save_to_vault">Save to Vault</button>
+          <button class="tc__btn" id="tc__close_modal">Decline</button>
+          <button class="tc__btn" id="tc__save_to_vault">Upload</button>
         </div>
       </div>
   `;
@@ -470,27 +472,23 @@ function createModalDialog(_title, _reponsePayload) {
     .querySelector("#tc__save_to_vault")
     .addEventListener("click", async function () {
       let selection = tcDom.getSelectedOption();
-      if (!selection) {
-        alert("Please select an option");
-        return;
-      }
-
-      var request = selection.requestId;
-      var type = selection.type;
-
-      if (!request) {
-        alert("Please select a request");
-        return;
-      }
-
-      if (isNaN(type)) {
-        alert("Please select a document type");
-        return;
+      if (selection) {
+        var requestId = selection.requestId;
+        var type = selection.type;
+        //
+        if (!requestId) {
+          alert("Please select a request");
+          return;
+        }
+        if (!type) {
+          alert("Please select a document type");
+          return;
+        }
+        _reponsePayload.requestId = requestId;
+        _reponsePayload.documentType = type;
       }
 
       _reponsePayload.saveToVault = true;
-      _reponsePayload.requestId = request;
-      _reponsePayload.documentType = type;
 
       await chrome.runtime.sendMessage(_reponsePayload);
     });
@@ -627,8 +625,23 @@ async function tc__init() {
           root.textContent = "";
           alert("Uploaded with success");
         } else {
-          alert("Failed to upload");
+          alert("Failed to connect to Native Host");
         }
+      } else if (request.action == ACTIONS.NATIVE_HOST_CONNECT) {
+        if (!request.isConnected) {
+          alert("Failed to connect to Native Host");
+        } else {
+          if (request.result && request.result.IsSuccess) {
+            alert("File uploaded successfully");
+          } else {
+            alert("Failed to upload file | " + request.result.Message);
+          }
+        }
+        let root = document.querySelector(".tc__host").shadowRoot;
+        // appending to the shadow
+        root.textContent = "";
+
+        _reponsePayload.saveToVault = false;
       }
       // let userConfirmation = confirm(
       //   "Do you want to save the file to the Vault?"

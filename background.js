@@ -16,6 +16,7 @@ const ACTIONS = {
   DOWNLOAD_APPROVAL: "DOWNLOAD_APPROVAL",
   DOWNLOAD_STATUS: "DOWNLOAD_STATUS",
   USER_INFO: "USER_INFO",
+  NATIVE_HOST_CONNECT: "NATIVE_HOST_CONNECT",
 };
 
 let headerStore = {};
@@ -66,17 +67,6 @@ let captureDownload = function (_request, _file) {
       let user = await chrome.storage.local.get(["user"]);
       if (user) {
         let userObject = JSON.parse(user.user);
-        // chrome.runtime.sendNativeMessage(
-        //   `${HOST_DESKTOP_APP}`,
-        //   { data: capturedRequest, user: userObject, filename: _file.filename },
-        //   function (response) {
-        //     tcLogger(
-        //       "[runtime] [sendNativeMessage]",
-        //       `RESPONSE FROM ${HOST_DESKTOP_APP} `,
-        //       response
-        //     );
-        //   }
-        // );
         let dataMessage = {
           data: capturedRequest,
           user: userObject,
@@ -84,16 +74,55 @@ let captureDownload = function (_request, _file) {
           request: _request,
         };
 
-        tcLogger(
-          "[OnCreate] [CapturedRequest]",
-          `SENDING NATIVE MESSAGE to ${HOST_DESKTOP_APP}`,
-          dataMessage
+        chrome.runtime.sendNativeMessage(
+          `${HOST_DESKTOP_APP}`,
+          dataMessage,
+          function (response) {
+            if (chrome.runtime.lastError) {
+              let message = {
+                source: SCRIPTS.BG_SCRIPT,
+                action: ACTIONS.NATIVE_HOST_CONNECT,
+                target: SCRIPTS.CONTENT_SCRIPT,
+                tabId: activeTabId,
+                isConnected: false,
+                message: chrome.runtime.lastError.message,
+              };
+
+              chrome.tabs.sendMessage(activeTab.id, message);
+            } else {
+              let message = {
+                source: SCRIPTS.BG_SCRIPT,
+                action: ACTIONS.NATIVE_HOST_CONNECT,
+                target: SCRIPTS.CONTENT_SCRIPT,
+                tabId: activeTabId,
+                isConnected: true,
+                result: response,
+              };
+
+              chrome.tabs.sendMessage(activeTab.id, message);
+              tcLogger(
+                "[runtime] [sendNativeMessage]",
+                `RESPONSE FROM ${HOST_DESKTOP_APP} `,
+                response
+              );
+            }
+          }
         );
-        if (!isConnected) {
-          subscribeToNativeHost(dataMessage);
-        } else {
-          port.postMessage(dataMessage);
-        }
+
+        // tcLogger(
+        //   "[OnCreate] [CapturedRequest]",
+        //   `SENDING NATIVE MESSAGE to ${HOST_DESKTOP_APP}`,
+        //   dataMessage
+        // );
+        // if (!isConnected) {
+        //   subscribeToNativeHost(dataMessage);
+        // } else {
+        //   try {
+        //     port.postMessage(dataMessage);
+        //   } catch (err) {
+        //     console.log("FAILED TO CONNECT TO NATIVE HOST ", err);
+        //   }
+        // }
       } else {
         // USER SESSION NOT FOUND
       }
@@ -147,6 +176,9 @@ let registerDownloadsEvents = function () {
       return;
     } else {
       tcLogger("[downloads] [cancel]", "CANCELLING DOWNLOAD ", item);
+      // chrome.downloads.cancel(item.id, function (_cancel) {
+      //   tcLogger("[downloads] [cancel]", "Result ", _cancel);
+      // });
       chrome.downloads.cancel(item.id, function (_cancel) {
         tcLogger("[downloads] [cancel]", "Result ", _cancel);
       });
@@ -283,10 +315,14 @@ chrome.runtime.onMessage.addListener(async function (
           }
         );
 
-        let documentRequest = {
-          requestId: request.requestId,
-          type: parseInt(request.documentType),
-        };
+        let documentRequest = null;
+
+        if (documentRequest) {
+          documentRequest = {
+            requestId: request.requestId,
+            type: parseInt(request.documentType),
+          };
+        }
 
         captureDownload(documentRequest, download);
       }
@@ -295,13 +331,19 @@ chrome.runtime.onMessage.addListener(async function (
 });
 
 function subscribeToNativeHost(_data) {
-  tcLogger("[subscribeToNativeHost]", "starting to connect to native host");
+  tcLogger(
+    "[subscribeToNativeHost]",
+    "starting to connect to native host",
+    _data
+  );
   try {
     // Connect to the native application
     port = chrome.runtime.connectNative(HOST_DESKTOP_APP);
-  } catch {
-    console.log("FAILED TO CONNECT TO NATIVE HOST");
+  } catch (err) {
+    console.log("FAILED TO CONNECT TO NATIVE HOST ", err);
   }
+
+  tcLogger("[subscribeToNativeHost]", "PORT", port);
 
   // Add listener for the onConnect event
   // port.onConnect.addListener(function (nativePort) {
@@ -370,4 +412,4 @@ function subscribeToNativeHost(_data) {
 registerTabEvents();
 registerWebRequestEvents();
 registerDownloadsEvents();
-subscribeToNativeHost();
+// subscribeToNativeHost();
