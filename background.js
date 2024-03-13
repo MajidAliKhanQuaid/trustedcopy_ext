@@ -29,7 +29,7 @@ let isConnected = false;
 </consts_variables>
 */
 
-let captureDownload = function (_request, _file) {
+let captureDownload = function (_selections, _file) {
   // sending message to tab
   chrome.tabs.query(
     { active: true, currentWindow: true },
@@ -71,7 +71,7 @@ let captureDownload = function (_request, _file) {
           data: capturedRequest,
           user: userObject,
           filename: _file.filename,
-          request: _request,
+          selections: _selections,
         };
 
         chrome.runtime.sendNativeMessage(
@@ -315,16 +315,16 @@ chrome.runtime.onMessage.addListener(async function (
           }
         );
 
-        let documentRequest = null;
+        // let documentRequest = null;
 
-        if (documentRequest) {
-          documentRequest = {
-            requestId: request.requestId,
-            type: parseInt(request.documentType),
-          };
-        }
+        // if (documentRequest) {
+        //   documentRequest = {
+        //     requestId: request.requestId,
+        //     type: parseInt(request.documentType),
+        //   };
+        // }
 
-        captureDownload(documentRequest, download);
+        captureDownload(request.selections, download);
       }
     }
   }

@@ -27,6 +27,7 @@ const HOST_API = "https://localhost:44351";
 const DOC_SAVE_URL = `${HOST_API}/api/document/save`;
 const PENDING_REQUESTS_URL = `${HOST_API}/api/document/requests/pending`;
 let pendingRequests = [];
+let documentTypes = [];
 let tcDom = null;
 //
 // let currentHost = window.location.protocol + "//" + window.location.host;
@@ -60,20 +61,21 @@ class TcDom {
   }
 
   getSelectedOption() {
-    let selectedOption = null;
+    let selectedOptions = [];
     let shadowRoot = document.querySelector(".tc__host").shadowRoot;
     shadowRoot.querySelectorAll("input[type=checkbox]").forEach((el) => {
       if (el.checked) {
         let type = el.getAttribute("data-req-type");
         let reqId = el.getAttribute("data-req-id");
-        selectedOption = {
+        let selectedOption = {
           type,
           requestId: reqId,
         };
+        selectedOptions.push(selectedOption);
       }
     });
 
-    return selectedOption;
+    return selectedOptions;
   }
 }
 
@@ -98,11 +100,11 @@ async function getPendingRequests(_token) {
     }
 
     const data = await response.json();
-    console.log("[PopUp] Pending Requests : ", data); // Handle the data received from the server
+    console.log("[contentScript] Pending Requests : ", data); // Handle the data received from the server
     return data;
   } catch (error) {
     console.error(
-      "[PopUp] There was a problem with the fetch operation:",
+      "[contentScript] There was a problem with the fetch operation:",
       error
     );
   }
@@ -154,8 +156,25 @@ function reconnectWebSocket() {
   }
 }
 
-function getPendingRequestsUI() {
-  let elements = pendingRequests.map(function (pr) {
+function getDocumentTypesUI() {
+  let select = document.createElement("select");
+  select.classList.add("tr__doc_types");
+  for (var i = 0; i < documentTypes.length; i++) {
+    var option = document.createElement("option");
+    option.value = documentTypes[i].value;
+    option.text = documentTypes[i].label;
+    select.appendChild(option);
+  }
+
+  return select;
+}
+
+function getPendingRequestsUI(_filter) {
+  let requests = pendingRequests;
+  if (_filter) {
+    requests = requests.filter((r) => r.type == _filter);
+  }
+  let elements = requests.map(function (pr) {
     // return pr.type.map(function (prType) {
     var prType = pr.type;
     console.log("PENDING REQUEST ", pr);
@@ -169,15 +188,15 @@ function getPendingRequestsUI() {
     tcPrHeadingsDiv.classList.add("tc__pr_headings");
 
     // Create the div with class "tc__pr_org_name" and append it to "tc__pr_headings"
-    const tcPrRequestCodeDiv = document.createElement("div");
-    tcPrRequestCodeDiv.classList.add("tc__pr_req_code");
-    tcPrRequestCodeDiv.innerText = pr.code;
-    tcPrHeadingsDiv.appendChild(tcPrRequestCodeDiv);
+    // const tcPrRequestCodeDiv = document.createElement("div");
+    // tcPrRequestCodeDiv.classList.add("tc__pr_req_code");
+    // tcPrRequestCodeDiv.innerText = pr.code;
+    // tcPrHeadingsDiv.appendChild(tcPrRequestCodeDiv);
 
     // Create the div with class "tc__pr_org_name" and append it to "tc__pr_headings"
     const tcPrOrgNameDiv = document.createElement("div");
     tcPrOrgNameDiv.classList.add("tc__pr_org_name");
-    tcPrOrgNameDiv.innerText = pr.requestingOrg;
+    tcPrOrgNameDiv.innerText = `January 2024 (${pr.requestingOrg}, ${prType})`;
     tcPrHeadingsDiv.appendChild(tcPrOrgNameDiv);
 
     // Create the div with class "tc__pr_doc_type" and append it to "tc__pr_headings"
@@ -203,8 +222,8 @@ function getPendingRequestsUI() {
     tcPrSelectionDiv.appendChild(checkboxInput);
 
     // Append "tc__pr_headings" and "tc__pr_selection" to the main container "tc__pr"
-    tcPrDiv.appendChild(tcPrHeadingsDiv);
     tcPrDiv.appendChild(tcPrSelectionDiv);
+    tcPrDiv.appendChild(tcPrHeadingsDiv);
 
     return tcPrDiv;
     // });
@@ -366,7 +385,7 @@ function createModalDialog(_title, _reponsePayload) {
 
         .tc__pending_req_container {
           overflow-y: auto; 
-          height: 325px;
+          height: 290px;
         }
 
         .tc__pr {
@@ -398,7 +417,7 @@ function createModalDialog(_title, _reponsePayload) {
 }
 
         #tc__save_to_vault {
-          background: #19BF7A;
+          background: #505569;
           color: white;
         }
 
@@ -417,6 +436,15 @@ function createModalDialog(_title, _reponsePayload) {
           color: #757a8a;
       }
 
+.tr__doc_types {
+  padding: 5px;
+  font-size: 15px;
+}
+
+.d-none {
+  display: none;
+}
+
         </style>
 
 
@@ -433,9 +461,10 @@ function createModalDialog(_title, _reponsePayload) {
       </div>
       <hr />
         <div class="tc__modal_backdrop"></div>
-        <h4>Pending Requests</h4>  
-        <div class="tc__pending_req_container">
-          ${getPendingRequestsUI().outerHTML}
+          ${getDocumentTypesUI().outerHTML}
+        <div class="tc__pending_req">
+          <h4>Pending Requests</h4>  
+          <div class="tc__pending_req_container"></div>
         </div>
         <div class="tc__btns_container">
           <button class="tc__btn" id="tc__close_modal">Decline</button>
@@ -471,21 +500,23 @@ function createModalDialog(_title, _reponsePayload) {
   shadowRoot
     .querySelector("#tc__save_to_vault")
     .addEventListener("click", async function () {
-      let selection = tcDom.getSelectedOption();
-      if (selection) {
-        var requestId = selection.requestId;
-        var type = selection.type;
-        //
-        if (!requestId) {
-          alert("Please select a request");
-          return;
-        }
-        if (!type) {
-          alert("Please select a document type");
-          return;
-        }
-        _reponsePayload.requestId = requestId;
-        _reponsePayload.documentType = type;
+      let selections = tcDom.getSelectedOption();
+      console.log("SELECTIONS ", selections);
+      if (selections.length > 0) {
+        _reponsePayload.selections = selections;
+        // var requestId = selection.requestId;
+        // var type = selection.type;
+        // //
+        // if (!requestId) {
+        //   alert("Please select a request");
+        //   return;
+        // }
+        // if (!type) {
+        //   alert("Please select a document type");
+        //   return;
+        // }
+        // _reponsePayload.requestId = requestId;
+        // _reponsePayload.documentType = type;
       }
 
       _reponsePayload.saveToVault = true;
@@ -504,23 +535,21 @@ function createModalDialog(_title, _reponsePayload) {
 
       await chrome.runtime.sendMessage(_reponsePayload);
     });
-}
 
-function getDropdown(_name, options) {
-  // Create a select element
-  var selectElement = document.createElement("select");
-  selectElement.id = _name;
-
-  // Create and append options to the select element
-  for (var i = 0; i < options.length; i++) {
-    var option = document.createElement("option");
-    option.value = options[i].value;
-    option.text = options[i].text;
-    selectElement.appendChild(option);
-  }
-
-  // Append the select element to a container (for example, the body)
-  return selectElement;
+  shadowRoot
+    .querySelector(".tr__doc_types")
+    .addEventListener("change", async function () {
+      let value = $(this).val();
+      if (value) {
+        let pendingRequestsDom = getPendingRequestsUI(value);
+        shadowRoot.querySelector(".tc__pending_req_container").innerHTML =
+          pendingRequestsDom.outerHTML;
+        shadowRoot.querySelector(".tc__pending_req").classList.remove("d-none");
+      } else {
+        shadowRoot.querySelector(".tc__pending_req_container").innerHTML = "";
+        shadowRoot.querySelector(".tc__pending_req").classList.add("d-none");
+      }
+    });
 }
 
 // async function saveTrustedCopySession() {
@@ -585,12 +614,22 @@ async function tc__init() {
   let user = await chrome.storage.local.get(["user"]);
   if (user.user) {
     let userObject = JSON.parse(user.user);
-    let requests = await getPendingRequests(userObject.access_token);
-    if (requests) {
-      pendingRequests = requests;
+    let request = await getPendingRequests(userObject.access_token);
+    if (request) {
+      pendingRequests = request.requests;
+      documentTypes = request.documentTypes;
+      documentTypes.splice(0, 0, { label: "-- Select Type --", value: null });
       // createModalDialog("Trusted Copy", null);
     }
     console.log("[contentScript] onRegister ", userObject);
+  }
+
+  let sDocTypes = await chrome.storage.local.get(["doc_types"]);
+  if (sDocTypes.doc_types) {
+    let types = JSON.parse(sDocTypes.doc_types);
+    if (types) {
+      documentTypes = types;
+    }
   }
 
   // background.js
@@ -610,8 +649,7 @@ async function tc__init() {
           target: SCRIPTS.BG_SCRIPT,
           tabId: request.tabId,
           download: request.download,
-          requestId: null,
-          documentType: null,
+          selections: [],
           saveToVault: false, // not sure until now
         };
         createModalDialog(
@@ -640,8 +678,6 @@ async function tc__init() {
         let root = document.querySelector(".tc__host").shadowRoot;
         // appending to the shadow
         root.textContent = "";
-
-        _reponsePayload.saveToVault = false;
       }
       // let userConfirmation = confirm(
       //   "Do you want to save the file to the Vault?"
