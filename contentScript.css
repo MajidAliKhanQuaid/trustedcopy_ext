@@ -20,6 +20,10 @@
   padding: 15px;
 }
 
+.tc_m-t-15 {
+  margin-top: 15px;
+}
+
 .tc__modal_content {
   font-family: "Inter", sans-serif;
 }
@@ -77,8 +81,8 @@ div {
   position: absolute;
   top: 0;
   left: 0;
-  height: 25px;
-  width: 25px;
+  height: 24px;
+  width: 24px;
   border-radius: 5px;
   background-color: #2563eb;
 }
@@ -90,7 +94,7 @@ div {
 
 /* When the checkbox is checked, add a blue background */
 .tc__cb_cont input:checked ~ .checkmark {
-  background-color: rgb(22, 193, 123);
+  background-color: #2563eb;
 }
 
 /* Create the checkmark/indicator (hidden when not checked) */
@@ -175,22 +179,18 @@ div {
   height: 126px;
 }
 
-.tc__pending_req {
-  margin-top: 15px;
-}
-
-.tc__pending_req_container {
-  overflow-y: auto;
-  height: 290px;
-}
-
 .tc__pr {
   display: flex;
+  flex-direction: column;
   background-color: #ffffff;
   margin: 15px 0px;
   padding: 16px 8px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
+}
+
+.tc__pr_title {
+  display: flex;
 }
 
 .tc__pr_headings {
@@ -209,6 +209,7 @@ div {
   border: 2px solid transparent;
   width: 163px;
   height: 56px;
+  gap: 2px;
 }
 
 .tc__btns_container {
@@ -260,10 +261,67 @@ div {
   font-weight: 400;
   font-size: 16px;
   line-height: 25.6px;
+  margin-top: 15px;
 }
 
 a,
 a:hover {
   color: #2563eb;
   text-decoration: none;
+}
+
+.tc_abc {
+  display: flex;
+  margin-left: 30px;
+  margin-top: 15px;
+}
+/* Hide default radio button */
+input[type="radio"] {
+  display: none;
+}
+
+/* Custom radio button style */
+.tc__radio {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #2563eb;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+/* Custom radio button inner circle */
+.tc__radio::before {
+  content: "";
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #2563eb;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.3s ease;
+}
+
+/* Show inner circle when radio button is checked */
+input[type="radio"]:checked + .tc__radio::before {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Style for disabled radio button */
+input[type="radio"]:disabled + .custom-radio {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tc__pr_org_name {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  text-align: left;
+  color: #0f172a;
 }

@@ -35,13 +35,65 @@ let tcDom = null;
 //   alert("[Extension] Welcome to Trusted Copy Site");
 // }
 //
+
+function formatRequest(_req) {
+  let formattedDate = "";
+  if (_req.startMonth && _req.startYear) {
+    let startDate = "";
+    startDate = new Date(
+      `${_req.startYear}-${_req.startMonth + 1}-1`
+    ).toLocaleString("en-us", {
+      month: "long",
+      year: "numeric",
+    });
+    formattedDate = startDate;
+  }
+
+  if (_req.endMonth && _req.endYear) {
+    let endDate = "";
+    endDate = new Date(`${_req.endYear}-${_req.endMonth + 1}-1`).toLocaleString(
+      "en-us",
+      {
+        month: "long",
+        year: "numeric",
+      }
+    );
+    formattedDate += " - " + endDate;
+  }
+
+  return formattedDate;
+}
+
+function groupObjectsByDate(array) {
+  const groupedObjects = {};
+
+  array.forEach((obj) => {
+    // const key = `${obj.startMonth || "null"}-${obj.startYear || "null"}-${
+    //   obj.endMonth || "null"
+    // }-${obj.endYear || "null"}`;
+    const key = formatRequest(obj);
+    if (!groupedObjects[key]) {
+      groupedObjects[key] = [];
+    }
+    groupedObjects[key].push(obj);
+  });
+
+  return groupedObjects;
+}
+
 const destinationServerUrl = "https://destination-server.com/upload";
 
 class TcDom {
-  getCheckbox(_type, _id) {
+  getCheckbox(_type, _id, _index) {
+    let _class = `tc__cb_${_index}`;
+    let _checked = _index == 0;
+    let _disabled = _index > 0;
+
     let html = `
     <label class="tc__cb_cont">
-      <input type="checkbox" class="tc__cb" data-req-type="${_type}" data-req-id="${_id}">
+      <input type="checkbox" class="tc__cb ${_class}" data-req-type="${_type}" data-req-id="${_id}" ${
+      _checked ? "checked" : ""
+    } ${_disabled ? "disabled" : ""}>
       <span class="checkmark"></span>
     </label>`;
     let tempEl = document.createElement("div");
@@ -49,14 +101,11 @@ class TcDom {
     return tempEl.firstElementChild;
   }
 
-  uncheckAllExceptOne(_type, _id) {
+  toggleCheckboxes(_id) {
     let shadowRoot = document.querySelector(".tc__host").shadowRoot;
     shadowRoot.querySelectorAll("input[type=checkbox]").forEach((el) => {
-      let type = el.getAttribute("data-req-type");
-      let reqId = el.getAttribute("data-req-id");
-      if (!(type == _type && _id == reqId)) {
-        el.checked = false;
-      }
+      el.checked = el.classList.contains(`tc__cb_${_id}`);
+      el.disabled = !el.classList.contains(`tc__cb_${_id}`);
     });
   }
 
@@ -76,6 +125,18 @@ class TcDom {
     });
 
     return selectedOptions;
+  }
+
+  getRadio(_type, _id) {
+    let _checked = _id == 0;
+    let html = `<label>
+    <input type="radio" name="rad_request" value="${_id}" ${
+      _checked ? "checked" : ""
+    }>
+    <span class="tc__radio"></span></label>`;
+    let tempEl = document.createElement("div");
+    tempEl.innerHTML = html;
+    return tempEl.firstElementChild;
   }
 }
 
@@ -174,11 +235,77 @@ function getPendingRequestsUI(_filter) {
   if (_filter) {
     requests = requests.filter((r) => r.type == _filter);
   }
-  let elements = requests.map(function (pr) {
+  console.log("REQUESTS ", requests);
+
+  /////
+  /////
+
+  // let __req = [
+  //   {
+  //     id: 1,
+  //     startMonth: 1,
+  //     startYear: 2024,
+  //     endMonth: 6,
+  //     endYear: 2024,
+  //     requestingOrg: "ABC",
+  //     type: "Utility Bills",
+  //   },
+  //   {
+  //     id: 2,
+  //     startMonth: 1,
+  //     startYear: 2024,
+  //     endMonth: 6,
+  //     endYear: 2024,
+  //     requestingOrg: "XYZ",
+  //     type: "Utility Bills",
+  //   },
+  //   {
+  //     id: 3,
+  //     startMonth: 2,
+  //     startYear: 2002,
+  //     endMonth: null,
+  //     endYear: null,
+  //     requestingOrg: "ABC",
+  //     type: "Utility Bills",
+  //   },
+  //   {
+  //     id: 4,
+  //     startMonth: 3,
+  //     startYear: 2023,
+  //     endMonth: null,
+  //     endYear: null,
+  //     requestingOrg: "XYZ",
+  //     type: "Utility Bills",
+  //   },
+  //   {
+  //     id: 5,
+  //     startMonth: 4,
+  //     startYear: 2024,
+  //     endMonth: null,
+  //     endYear: null,
+  //     requestingOrg: "XYZ",
+  //     type: "Pay Stubs",
+  //   },
+  // ];
+
+  // requests = __req;
+  let groupedRequests = groupObjectsByDate(requests);
+  /////
+  /////
+
+  let elements = Object.keys(groupedRequests).map(function (grKey, index) {
+    let requests = groupedRequests[grKey];
+    let formattedOrgs = requests.map((r) => r.requestingOrg).join(", ");
+
+    //
+    //
+
     // return pr.type.map(function (prType) {
-    var prType = pr.type;
-    console.log("PENDING REQUEST ", pr);
-    console.log("PENDING REQUEST TYPE ", prType);
+    // let pr = groupedRequests[pr];
+    // let pr = req;
+    // var prType = pr.type;
+    // console.log("PENDING REQUEST ", pr);
+    // console.log("PENDING REQUEST TYPE ", prType);
     // Create the main container div with class "tc__pr"
     const tcPrDiv = document.createElement("div");
     tcPrDiv.classList.add("tc__pr");
@@ -196,17 +323,17 @@ function getPendingRequestsUI(_filter) {
     // Create the div with class "tc__pr_org_name" and append it to "tc__pr_headings"
     const tcPrOrgNameDiv = document.createElement("div");
     tcPrOrgNameDiv.classList.add("tc__pr_org_name");
-    tcPrOrgNameDiv.innerText = `January 2024 (${pr.requestingOrg}, ${prType})`;
+    tcPrOrgNameDiv.innerText = `${grKey} (${formattedOrgs})`;
     tcPrHeadingsDiv.appendChild(tcPrOrgNameDiv);
 
     // Create the div with class "tc__pr_doc_type" and append it to "tc__pr_headings"
-    const tcPrDocTypeDiv = document.createElement("div");
-    tcPrDocTypeDiv.classList.add("tc__pr_doc_type");
-    let docType = types.find((t) => t.value == prType);
-    if (docType) {
-      tcPrDocTypeDiv.innerText = docType.label;
-    }
-    tcPrHeadingsDiv.appendChild(tcPrDocTypeDiv);
+    // const tcPrDocTypeDiv = document.createElement("div");
+    // tcPrDocTypeDiv.classList.add("tc__pr_doc_type");
+    // let docType = types.find((t) => t.value == prType);
+    // if (docType) {
+    //   tcPrDocTypeDiv.innerText = docType.label;
+    // }
+    // tcPrHeadingsDiv.appendChild(tcPrDocTypeDiv);
 
     // Create the div with class "tc__pr_selection"
     const tcPrSelectionDiv = document.createElement("div");
@@ -217,17 +344,146 @@ function getPendingRequestsUI(_filter) {
     // checkboxInput.setAttribute("type", "checkbox");
     // checkboxInput.setAttribute("class", "");
     // checkboxInput.setAttribute("data-id", "");
-    const checkboxInput = tcDom.getCheckbox(prType, pr.id);
+    const checkboxInput = tcDom.getRadio(null, index);
     // console.log("CHECKBOX ", checkboxInput);
     tcPrSelectionDiv.appendChild(checkboxInput);
 
+    const trTitleWithCheckbox = document.createElement("div");
+    trTitleWithCheckbox.classList.add("tc__pr_title");
+
     // Append "tc__pr_headings" and "tc__pr_selection" to the main container "tc__pr"
-    tcPrDiv.appendChild(tcPrSelectionDiv);
-    tcPrDiv.appendChild(tcPrHeadingsDiv);
+    trTitleWithCheckbox.appendChild(tcPrSelectionDiv);
+    trTitleWithCheckbox.appendChild(tcPrHeadingsDiv);
+    //
+    tcPrDiv.appendChild(trTitleWithCheckbox);
+
+    //
+    //
+    requests.forEach(function (request) {
+      let docRequestContainer = document.createElement("div");
+      docRequestContainer.classList.add("tc_abc");
+      const docRequestCheckboxInput = tcDom.getCheckbox(
+        request.type,
+        request.id,
+        index
+      );
+      docRequestContainer.appendChild(docRequestCheckboxInput);
+
+      const docRequestOrg = document.createElement("div");
+      docRequestOrg.innerHTML = request.requestingOrg;
+      docRequestOrg.classList.add("tc_xyz");
+
+      docRequestContainer.appendChild(docRequestCheckboxInput);
+      docRequestContainer.appendChild(docRequestOrg);
+
+      tcPrDiv.appendChild(docRequestContainer);
+    });
 
     return tcPrDiv;
+    // return requests.map(function (req) {
+    //   // // return pr.type.map(function (prType) {
+    //   // // let pr = groupedRequests[pr];
+    //   // let pr = req;
+    //   // var prType = pr.type;
+    //   // console.log("PENDING REQUEST ", pr);
+    //   // console.log("PENDING REQUEST TYPE ", prType);
+    //   // // Create the main container div with class "tc__pr"
+    //   // const tcPrDiv = document.createElement("div");
+    //   // tcPrDiv.classList.add("tc__pr");
+    //   // // Create the div with class "tc__pr_headings"
+    //   // const tcPrHeadingsDiv = document.createElement("div");
+    //   // tcPrHeadingsDiv.classList.add("tc__pr_headings");
+    //   // // Create the div with class "tc__pr_org_name" and append it to "tc__pr_headings"
+    //   // // const tcPrRequestCodeDiv = document.createElement("div");
+    //   // // tcPrRequestCodeDiv.classList.add("tc__pr_req_code");
+    //   // // tcPrRequestCodeDiv.innerText = pr.code;
+    //   // // tcPrHeadingsDiv.appendChild(tcPrRequestCodeDiv);
+    //   // // Create the div with class "tc__pr_org_name" and append it to "tc__pr_headings"
+    //   // const tcPrOrgNameDiv = document.createElement("div");
+    //   // tcPrOrgNameDiv.classList.add("tc__pr_org_name");
+    //   // tcPrOrgNameDiv.innerText = `${grKey} (${pr.requestingOrg}, ${prType})`;
+    //   // tcPrHeadingsDiv.appendChild(tcPrOrgNameDiv);
+    //   // // Create the div with class "tc__pr_doc_type" and append it to "tc__pr_headings"
+    //   // const tcPrDocTypeDiv = document.createElement("div");
+    //   // tcPrDocTypeDiv.classList.add("tc__pr_doc_type");
+    //   // let docType = types.find((t) => t.value == prType);
+    //   // if (docType) {
+    //   //   tcPrDocTypeDiv.innerText = docType.label;
+    //   // }
+    //   // tcPrHeadingsDiv.appendChild(tcPrDocTypeDiv);
+    //   // // Create the div with class "tc__pr_selection"
+    //   // const tcPrSelectionDiv = document.createElement("div");
+    //   // tcPrSelectionDiv.classList.add("tc__pr_selection");
+    //   // // Create the input element with type checkbox and append it to "tc__pr_selection"
+    //   // // const checkboxInput = document.createElement("input");
+    //   // // checkboxInput.setAttribute("type", "checkbox");
+    //   // // checkboxInput.setAttribute("class", "");
+    //   // // checkboxInput.setAttribute("data-id", "");
+    //   // const checkboxInput = tcDom.getCheckbox(prType, pr.id);
+    //   // // console.log("CHECKBOX ", checkboxInput);
+    //   // tcPrSelectionDiv.appendChild(checkboxInput);
+    //   // // Append "tc__pr_headings" and "tc__pr_selection" to the main container "tc__pr"
+    //   // tcPrDiv.appendChild(tcPrSelectionDiv);
+    //   // tcPrDiv.appendChild(tcPrHeadingsDiv);
+    //   // return tcPrDiv;
     // });
   });
+
+  // let elements = Object.keys(groupedRequests).map(function (gr) {
+  //   // return pr.type.map(function (prType) {
+  //   let pr = groupedRequests[pr];
+  //   var prType = pr.type;
+  //   console.log("PENDING REQUEST ", pr);
+  //   console.log("PENDING REQUEST TYPE ", prType);
+  //   // Create the main container div with class "tc__pr"
+  //   const tcPrDiv = document.createElement("div");
+  //   tcPrDiv.classList.add("tc__pr");
+
+  //   // Create the div with class "tc__pr_headings"
+  //   const tcPrHeadingsDiv = document.createElement("div");
+  //   tcPrHeadingsDiv.classList.add("tc__pr_headings");
+
+  //   // Create the div with class "tc__pr_org_name" and append it to "tc__pr_headings"
+  //   // const tcPrRequestCodeDiv = document.createElement("div");
+  //   // tcPrRequestCodeDiv.classList.add("tc__pr_req_code");
+  //   // tcPrRequestCodeDiv.innerText = pr.code;
+  //   // tcPrHeadingsDiv.appendChild(tcPrRequestCodeDiv);
+
+  //   // Create the div with class "tc__pr_org_name" and append it to "tc__pr_headings"
+  //   const tcPrOrgNameDiv = document.createElement("div");
+  //   tcPrOrgNameDiv.classList.add("tc__pr_org_name");
+  //   tcPrOrgNameDiv.innerText = `January 2024 (${pr.requestingOrg}, ${prType})`;
+  //   tcPrHeadingsDiv.appendChild(tcPrOrgNameDiv);
+
+  //   // Create the div with class "tc__pr_doc_type" and append it to "tc__pr_headings"
+  //   const tcPrDocTypeDiv = document.createElement("div");
+  //   tcPrDocTypeDiv.classList.add("tc__pr_doc_type");
+  //   let docType = types.find((t) => t.value == prType);
+  //   if (docType) {
+  //     tcPrDocTypeDiv.innerText = docType.label;
+  //   }
+  //   tcPrHeadingsDiv.appendChild(tcPrDocTypeDiv);
+
+  //   // Create the div with class "tc__pr_selection"
+  //   const tcPrSelectionDiv = document.createElement("div");
+  //   tcPrSelectionDiv.classList.add("tc__pr_selection");
+
+  //   // Create the input element with type checkbox and append it to "tc__pr_selection"
+  //   // const checkboxInput = document.createElement("input");
+  //   // checkboxInput.setAttribute("type", "checkbox");
+  //   // checkboxInput.setAttribute("class", "");
+  //   // checkboxInput.setAttribute("data-id", "");
+  //   const checkboxInput = tcDom.getCheckbox(prType, pr.id);
+  //   // console.log("CHECKBOX ", checkboxInput);
+  //   tcPrSelectionDiv.appendChild(checkboxInput);
+
+  //   // Append "tc__pr_headings" and "tc__pr_selection" to the main container "tc__pr"
+  //   tcPrDiv.appendChild(tcPrSelectionDiv);
+  //   tcPrDiv.appendChild(tcPrHeadingsDiv);
+
+  //   return tcPrDiv;
+  //   // });
+  // });
 
   console.log("ELEMENTS ", elements);
 
@@ -329,19 +585,21 @@ function createModalDialog(_title, _reponsePayload) {
   // Append the modal dialog to the body
   // document.body.appendChild(tcModalDialog);
 
-  var checkboxes = shadowRoot.querySelectorAll(".tc__cb");
+  // var checkboxes = shadowRoot.querySelectorAll(".tc__cb");
+  // console.log("Checkboxes ", checkboxes.length);
 
-  for (let i = 0; i < checkboxes.length; i++) {
-    checkboxes[i].addEventListener("change", async function () {
-      let type = this.getAttribute("data-req-type");
-      let id = this.getAttribute("data-req-id");
-      tcDom.uncheckAllExceptOne(type, id);
+  // for (let i = 0; i < checkboxes.length; i++) {
+  //   checkboxes[i].removeEventListener("change");
+  //   checkboxes[i].addEventListener("change", async function () {
+  //     let type = this.getAttribute("data-req-type");
+  //     let id = this.getAttribute("data-req-id");
+  //     // tcDom.uncheckAllExceptOne(type, id);
 
-      // console.log("Is Checked ", this.checked);
-      // console.log("Is Checked ", this.getAttribute("data-req-type"));
-      // console.log("Is Checked ", this.getAttribute("data-req-id"));
-    });
-  }
+  //     console.log("Is Checked ", this.checked);
+  //     console.log("Is Checked ", this.getAttribute("data-req-type"));
+  //     console.log("Is Checked ", this.getAttribute("data-req-id"));
+  //   });
+  // }
 
   shadowRoot
     .querySelector("#tc__save_to_vault")
@@ -388,14 +646,46 @@ function createModalDialog(_title, _reponsePayload) {
       let value = $(this).val();
       if (value) {
         let pendingRequestsDom = getPendingRequestsUI(value);
+        console.log("GOT UI");
         shadowRoot.querySelector(".tc__pending_req_container").innerHTML =
           pendingRequestsDom.outerHTML;
         shadowRoot.querySelector(".tc__pending_req").classList.remove("d-none");
+        subscribeToCheckBoxes();
       } else {
         shadowRoot.querySelector(".tc__pending_req_container").innerHTML = "";
         shadowRoot.querySelector(".tc__pending_req").classList.add("d-none");
       }
     });
+}
+
+function subscribeToCheckBoxes() {
+  let shadowRoot = document.querySelector(".tc__host").shadowRoot;
+  var checkboxes = shadowRoot.querySelectorAll(".tc__cb");
+  console.log("Checkboxes ", checkboxes.length);
+
+  for (let i = 0; i < checkboxes.length; i++) {
+    // checkboxes[i].removeEventListener("change");
+    checkboxes[i].addEventListener("change", function () {
+      let type = this.getAttribute("data-req-type");
+      let id = this.getAttribute("data-req-id");
+
+      console.log("Is Checked ", this.checked);
+      console.log("Is Checked ", this.getAttribute("data-req-type"));
+      console.log("Is Checked ", this.getAttribute("data-req-id"));
+    });
+  }
+
+  const radioButtons = shadowRoot.querySelectorAll('input[name="rad_request"]');
+  console.log("Radio Buttons ", radioButtons.length);
+
+  // Add event listener to each radio button
+  radioButtons.forEach(function (radio) {
+    radio.addEventListener("change", function () {
+      // Event handler function
+      console.log("Selected option: " + this.value);
+      tcDom.toggleCheckboxes(this.value);
+    });
+  });
 }
 
 // async function saveTrustedCopySession() {
@@ -465,7 +755,7 @@ async function tc__init() {
       pendingRequests = request.requests;
       documentTypes = request.documentTypes;
       documentTypes.splice(0, 0, {
-        label: "-- Choose Document Type --",
+        label: "Choose Document Type",
         value: null,
       });
       // createModalDialog("Trusted Copy", null);
