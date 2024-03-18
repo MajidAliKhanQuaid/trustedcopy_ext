@@ -20,14 +20,15 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["images/*"],
+      "resources": ["images/*", "contentScript.css"],
       "matches": ["<all_urls>"]
     }
   ],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["contentScript.js", "scripts/jquery-3.7.1.js"]
+      "js": ["contentScript.js", "scripts/jquery-3.7.1.js"],
+      "css": ["contentScript.css"]
     }
   ],
   "host_permissions": ["<all_urls>"],

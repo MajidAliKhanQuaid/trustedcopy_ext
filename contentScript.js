@@ -243,8 +243,10 @@ function getPendingRequestsUI(_filter) {
 }
 
 function createModalDialog(_title, _reponsePayload) {
-  let icon_url = chrome.runtime.getURL("images/icon.png");
-  let logo_url = chrome.runtime.getURL("images/logo_text.png");
+  // let icon_url = chrome.runtime.getURL("images/icon.png");
+  let logo_url = chrome.runtime.getURL("images/logo.png");
+  let upload_img_url = chrome.runtime.getURL("images/upload.png");
+  let close_img_url = chrome.runtime.getURL("images/close.png");
 
   // console.log("URL ", url);
   // Create a div element for the modal dialog
@@ -263,217 +265,61 @@ function createModalDialog(_title, _reponsePayload) {
 
   // Add content to the modal dialog
   tcModalDialog.innerHTML = `
-  <style>
-    .d-flex {
-      display: flex;
-    }
-  </style>
-
-      <style>
-      /* Customize the label (the tc__cb_cont) */
-      .tc__cb_cont {
-        display: block;
-        position: relative;
-        padding-left: 35px;
-        margin-bottom: 12px;
-        cursor: pointer;
-        font-size: 22px;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-      }
-      
-      /* Hide the browser's default checkbox */
-      .tc__cb_cont input {
-        position: absolute;
-        opacity: 0;
-        cursor: pointer;
-        height: 0;
-        width: 0;
-      }
-      
-      /* Create a custom checkbox */
-      .checkmark {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 25px;
-        width: 25px;
-        background-color: #eee;
-      }
-      
-      /* On mouse-over, add a grey background color */
-      .tc__cb_cont:hover input ~ .checkmark {
-        background-color: #ccc;
-      }
-      
-      /* When the checkbox is checked, add a blue background */
-      .tc__cb_cont input:checked ~ .checkmark {
-        background-color: rgb(22, 193, 123);
-      }
-      
-      /* Create the checkmark/indicator (hidden when not checked) */
-      .checkmark:after {
-        content: "";
-        position: absolute;
-        display: none;
-      }
-      
-      /* Show the checkmark when checked */
-      .tc__cb_cont input:checked ~ .checkmark:after {
-        display: block;
-      }
-      
-      /* Style the checkmark/indicator */
-      .tc__cb_cont .checkmark:after {
-        left: 9px;
-        top: 5px;
-        width: 5px;
-        height: 10px;
-        border: solid white;
-        border-width: 0 3px 3px 0;
-        -webkit-transform: rotate(45deg);
-        -ms-transform: rotate(45deg);
-        transform: rotate(45deg);
-      }
-</style>
-
-<style>
-.tc__modal_backdrop {
-  display: none;
-  position: fixed;
-  z-index: 9998;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.4);
-}
-</style>
-
-<style>
-        #tc__modal_dialog {
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background-color: rgba(0, 0, 0, 0.5);
-          padding: 15px;
-          border: 2px solid black;
-          z-index: 9999;
-          width: 100%;
-          height: 100%;
-          z-index: 9998;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .tc__modal_content {
-          background: white; 
-          /*min-width: 250px; 
-          max-width: 600px; 
-          min-height: 300px; 
-          max-height: 800px; 
-          height: 75vh; 
-          width: 75%;*/
-          height: 500px;
-          width: 400px;
-          padding: 5px;
-        }
-
-        .tc__pending_req_container {
-          overflow-y: auto; 
-          height: 290px;
-        }
-
-        .tc__pr {
-          background-color: #f7f7f7;
-          margin: 10px 0px;
-        }
-
-        .tc__pr_headings {
-          flex: 1;
-        }
-
-        .tc__pr {
-          display: flex;
-          padding: 10px 5px;
-        }
-
-        .tc__btn {
-          border-radius: 9999px;
-          padding: 10px;
-          margin: 10px;
-          outline: 2px solid transparent; 
-          border: 2px solid transparent; 
-        }
-
-.tc__btns_container {
-  display: flex;
-  margin: 10px 0px;
-  justify-content: flex-end;
-}
-
-        #tc__save_to_vault {
-          background: #505569;
-          color: white;
-        }
-
-.tc__pr_selection {
-  display: flex;
-  justify-content: center;
-}
-
-        #tc__close_modal {
-          background: red;
-          color: white;
-        }
-      
-      .tc__pr_doc_type {
-          font-weight: bold;
-          color: #757a8a;
-      }
-
-.tr__doc_types {
-  padding: 5px;
-  font-size: 15px;
-}
-
-.d-none {
-  display: none;
-}
-
-        </style>
-
-
       <div class="tc__modal_content">
-      <div class="d-flex m-15">
-        <div>
-          <img src="${icon_url}">
-        </div>
-        <div class="d-flex v-center">
-          <div style="margin-top: 7px; margin-left: 10px">
-            <img src="${logo_url}" width="100%">
+        <!-- tc_modal_header START -->
+        <div class="tc_modal_header tc_p-15">
+          <div class="d-flex v-center">
+            <!--<div>
+              <img src="{icon_url}">
+            </div>-->
+            <div class="d-flex v-center">
+              <div>
+                <img src="${logo_url}" width="90%">
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-      <hr />
-        <div class="tc__modal_backdrop"></div>
+        <!-- tc_modal_header END --> 
+        <!-- tc_modal_body START -->
+        <div class="tc_modal_body tc_p-15">
+          <div class="tc_download_info">
+            Please download your requested documents
+          </div>
+          <span class="tc_control_label">Choose the file type</span>
           ${getDocumentTypesUI().outerHTML}
-        <div class="tc__pending_req">
-          <h4>Pending Requests</h4>  
-          <div class="tc__pending_req_container"></div>
+          <div class="tc__pending_req">
+            <span class="tc_control_label">Choose the right request</span>  
+              <div class="tc__pending_req_container"></div>
+          </div>
         </div>
-        <div class="tc__btns_container">
-          <button class="tc__btn" id="tc__close_modal">Decline</button>
-          <button class="tc__btn" id="tc__save_to_vault">Upload</button>
+        <!-- tc_modal_body END -->
+        <!-- tc_modal_foot START -->
+        <div class="tc_modal_foot">
+          <div class="d-flex h-center v-center">
+            <button class="tc__btn" id="tc__close_modal"><img src='${close_img_url}' alt='close image' /> Decline</button>
+            <button class="tc__btn" id="tc__save_to_vault"><img src='${upload_img_url}' alt='close image' /> Upload</button>
+          </div>
+          <div class="d-flex h-center h-center tc_p-15">
+            <a href="https://www.google.com" target="_blank">View Dashboard</a>
+          </div>
         </div>
+        <!-- tc_modal_foot END -->
       </div>
   `;
 
   let shadowRoot = document.querySelector(".tc__host").shadowRoot;
+
+  // Create a <link> element to link your CSS file
+  const linkElement = document.createElement("link");
+  linkElement.rel = "stylesheet";
+  linkElement.type = "text/css";
+  linkElement.href = `${chrome.runtime.getURL(
+    "contentScript.css"
+  )}?_t=${new Date().getTime()}`;
+
+  // Inject the <link> element into the DOM
+  shadowRoot.appendChild(linkElement);
+
   // let host = document.querySelector(".tc__host");
   // let root = host.attachShadow({ mode: "open" });
   // // appending to the shadow
@@ -618,7 +464,10 @@ async function tc__init() {
     if (request) {
       pendingRequests = request.requests;
       documentTypes = request.documentTypes;
-      documentTypes.splice(0, 0, { label: "-- Select Type --", value: null });
+      documentTypes.splice(0, 0, {
+        label: "-- Choose Document Type --",
+        value: null,
+      });
       // createModalDialog("Trusted Copy", null);
     }
     console.log("[contentScript] onRegister ", userObject);
@@ -699,6 +548,7 @@ async function tc__init() {
     }
   );
 
+  createModalDialog("AA", null);
   // connectWebSocket();
 }
 
