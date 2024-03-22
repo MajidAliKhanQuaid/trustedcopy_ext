@@ -19,3 +19,15 @@ body {
   font-size: 15px;
   background-color: transparent;
 }
+
+.d-flex {
+  display: flex;
+}
+
+.v-center {
+  align-items: center;
+}
+
+.h-center {
+  justify-content: center;
+}

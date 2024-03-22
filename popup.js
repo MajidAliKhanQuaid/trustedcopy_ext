@@ -12,7 +12,7 @@ const PENDING_REQUESTS_URL = `${HOST_API}/api/document/requests/pending`;
 const HOST_FE = "http://localhost:3000";
 const SIGN_IN_URL = `${HOST_FE}/login`;
 const SIGN_UP_URL = `${HOST_FE}/signup`;
-const VAULT_URL = `${HOST_FE}/document/requests`;
+const VAULT_URL = `${HOST_FE}/requests`;
 
 console.log("LOCALSTORAGE ", Object.entries(chrome.storage.local));
 // document.addEventListener("DOMContentLoaded", async () => {

@@ -231,9 +231,11 @@ function getDocumentTypesUI() {
 }
 
 function getPendingRequestsUI(_filter) {
+  console.log("FILTER  ", _filter);
   let requests = pendingRequests;
+  console.log("TYPES  ", requests);
   if (_filter) {
-    requests = requests.filter((r) => r.type == _filter);
+    requests = requests.filter((r) => r.typeValue == _filter);
   }
   console.log("REQUESTS ", requests);
 
@@ -838,7 +840,7 @@ async function tc__init() {
     }
   );
 
-  createModalDialog("AA", null);
+  // createModalDialog("AA", null);
   // connectWebSocket();
 }
 
