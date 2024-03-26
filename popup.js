@@ -1,15 +1,9 @@
-// const host = "https://trusted-copy-7ao3.vercel.app";
-const BANK_STATEMENT = 0;
-const UTILITY_BILLS = 1;
-const PAY_STUB = 2;
-const DEGREE_TRANSCRIPT = 3;
-const W2_TAX_RETURN = 4;
+let manifest = chrome.runtime.getManifest();
+const HOST_API = manifest.tc_host_api;
+const DOC_SAVE_URL = `${HOST_API}/api/${manifest.tc_api_save_docs_path}`;
+const PENDING_REQUESTS_URL = `${HOST_API}/api/${manifest.tc_api_pending_docs_path}`;
 
-const HOST_API = "https://localhost:44351";
-const DOC_SAVE_URL = `${HOST_API}/api/document/save`;
-const PENDING_REQUESTS_URL = `${HOST_API}/api/document/requests/pending`;
-
-const HOST_FE = "http://localhost:3000";
+const HOST_FE = manifest.tc_host_fe_app;
 const SIGN_IN_URL = `${HOST_FE}/login`;
 const SIGN_UP_URL = `${HOST_FE}/signup`;
 const VAULT_URL = `${HOST_FE}/requests`;
@@ -50,26 +44,26 @@ chrome.webRequest.onBeforeRequest.addListener(
   { types: ["main_frame"], urls: ["<all_urls>"] }
 );
 
-function getDocumentTypes(_types) {
-  return _types.map(function (t) {
-    return getDocumentType(t);
-  });
-}
+// function getDocumentTypes(_types) {
+//   return _types.map(function (t) {
+//     return getDocumentType(t);
+//   });
+// }
 
-function getDocumentType(_type) {
-  if (_type == BANK_STATEMENT) {
-    return "Bank Statement";
-  } else if (_type == UTILITY_BILLS) {
-    return "Utility Bills";
-  } else if (_type == PAY_STUB) {
-    return "Pay Stub";
-  } else if (_type == DEGREE_TRANSCRIPT) {
-    return "Degree Transcript";
-  } else if (_type == W2_TAX_RETURN) {
-    return "W2 Tax Return";
-  }
-  return null;
-}
+// function getDocumentType(_type) {
+//   if (_type == BANK_STATEMENT) {
+//     return "Bank Statement";
+//   } else if (_type == UTILITY_BILLS) {
+//     return "Utility Bills";
+//   } else if (_type == PAY_STUB) {
+//     return "Pay Stub";
+//   } else if (_type == DEGREE_TRANSCRIPT) {
+//     return "Degree Transcript";
+//   } else if (_type == W2_TAX_RETURN) {
+//     return "W2 Tax Return";
+//   }
+//   return null;
+// }
 
 async function getPendingRequests(_token) {
   try {
@@ -123,18 +117,22 @@ jQuery(async function () {
         $(".tc-docs-screen").removeClass("d-none").addClass("d-flex");
 
         $(".tc-pending-requests").html("Loading ...");
-        let pendingRequests = await getPendingRequests(userInfo.access_token);
-        console.log("[Popup] ** Pending Request ", pendingRequests);
-        if (pendingRequests.length == 0) {
-          $(".tc-pending-requests").html("No requests found.");
-        } else {
-          let lstRequests = pendingRequests.map(function (req) {
-            return `<div style="border: solid 1px black; padding: 5px; margin: 2px;">
-          <div><a href="${HOST_FE}/document/request/${req.id}" target="blank">${req.code}</a></div>
-          <div>${req.type}</div>
-          </div>`;
-          });
-          $(".tc-pending-requests").html(lstRequests.join(""));
+        try {
+          let pendingRequests = await getPendingRequests(userInfo.access_token);
+          console.log("[Popup] ** Pending Request ", pendingRequests);
+          if (pendingRequests && pendingRequests.totalRecords == 0) {
+            $(".tc-pending-requests").html("No requests found.");
+          } else {
+            let lstRequests = pendingRequests.requests.map(function (req) {
+              return `<div style="border: solid 1px black; padding: 5px; margin: 2px;">
+            <div><a href="${HOST_FE}/document/request/${req.id}" target="blank">${req.code}</a></div>
+            <div>${req.type}</div>
+            </div>`;
+            });
+            $(".tc-pending-requests").html(lstRequests.join(""));
+          }
+        } catch (err) {
+          $(".tc-pending-requests").html("Network error");
         }
       } else {
         $(".tc-login-screen").removeClass("d-none").addClass("d-flex");

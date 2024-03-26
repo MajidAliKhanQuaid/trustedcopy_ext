@@ -22,10 +22,14 @@ const ACTIONS = {
   NATIVE_HOST_CONNECT: "NATIVE_HOST_CONNECT",
 };
 
-const HOST_FE = "http://localhost:3000";
-const HOST_API = "https://localhost:44351";
-const DOC_SAVE_URL = `${HOST_API}/api/document/save`;
-const PENDING_REQUESTS_URL = `${HOST_API}/api/document/requests/pending`;
+let manifest = chrome.runtime.getManifest();
+console.log("CONTENT SCRIPT MANIFEST ", manifest);
+
+const HOST_FE = manifest.tc_host_fe_app;
+const HOST_API = manifest.tc_host_api;
+const DOC_SAVE_URL = `${HOST_API}/api/${manifest.tc_api_save_docs_path}`;
+const PENDING_REQUESTS_URL = `${HOST_API}/api/${manifest.tc_api_pending_docs_path}`;
+
 let pendingRequests = [];
 let documentTypes = [];
 let tcDom = null;
@@ -141,12 +145,12 @@ class TcDom {
 }
 
 // const SOCKET_HOST = "ws://localhost:8899"; // WebSocket server URL
-const SOCKET_HOST = "ws://localhost:8080"; // WebSocket server URL
-let websocket;
-let retryInterval = 1000; // Initial retry interval in milliseconds
-const maxRetryInterval = 30000; // Maximum retry interval in milliseconds
-let retries = 0;
-const maxRetries = 10; // Maximum number of retry attempts
+// const SOCKET_HOST = "ws://localhost:8080"; // WebSocket server URL
+// let websocket;
+// let retryInterval = 1000; // Initial retry interval in milliseconds
+// const maxRetryInterval = 30000; // Maximum retry interval in milliseconds
+// let retries = 0;
+// const maxRetries = 10; // Maximum number of retry attempts
 
 async function getPendingRequests(_token) {
   try {
@@ -173,49 +177,49 @@ async function getPendingRequests(_token) {
 /*
 </consts_variables>
 */
-function connectWebSocket() {
-  console.log("[contentScript][Socket] calling connectWebSocket");
-  websocket = new WebSocket(SOCKET_HOST);
+// function connectWebSocket() {
+//   console.log("[contentScript][Socket] calling connectWebSocket");
+//   websocket = new WebSocket(SOCKET_HOST);
 
-  websocket.onopen = function () {
-    console.log("[Socket] [onopen]");
-    retries = 0; // Reset retry attempts upon successful connection
-  };
+//   websocket.onopen = function () {
+//     console.log("[Socket] [onopen]");
+//     retries = 0; // Reset retry attempts upon successful connection
+//   };
 
-  websocket.onmessage = function (event) {
-    console.log("[Socket] [onmessage]", event.data);
-    alert("File has been saved to vault");
-  };
+//   websocket.onmessage = function (event) {
+//     console.log("[Socket] [onmessage]", event.data);
+//     alert("File has been saved to vault");
+//   };
 
-  websocket.onerror = function (error) {
-    console.error("[Socket] [onerror]", error);
-    reconnectWebSocket(); // Attempt to reconnect upon error
-  };
+//   websocket.onerror = function (error) {
+//     console.error("[Socket] [onerror]", error);
+//     reconnectWebSocket(); // Attempt to reconnect upon error
+//   };
 
-  websocket.onclose = function (event) {
-    console.log("[Socket] [onclose]", event);
-    reconnectWebSocket(); // Attempt to reconnect upon close
-  };
-}
+//   websocket.onclose = function (event) {
+//     console.log("[Socket] [onclose]", event);
+//     reconnectWebSocket(); // Attempt to reconnect upon close
+//   };
+// }
 
-function reconnectWebSocket() {
-  if (retries < maxRetries) {
-    retries++;
-    const nextRetryInterval = Math.min(retryInterval * 2, maxRetryInterval); // Exponential backoff strategy
-    // const nextRetryInterval = Math.min(nextRetryInterval); // Exponential backoff strategy
-    console.log(
-      `Attempting to reconnect in ${nextRetryInterval} milliseconds (attempt ${retries}/${maxRetries})...`
-    );
-    setTimeout(connectWebSocket, nextRetryInterval); // Retry after the next interval
-    retryInterval = nextRetryInterval;
-    // }
-    // else {
-    //   console.log(
-    //     "Maximum retry attempts reached. Could not establish WebSocket connection."
-    //   );
-    // }
-  }
-}
+// function reconnectWebSocket() {
+//   if (retries < maxRetries) {
+//     retries++;
+//     const nextRetryInterval = Math.min(retryInterval * 2, maxRetryInterval); // Exponential backoff strategy
+//     // const nextRetryInterval = Math.min(nextRetryInterval); // Exponential backoff strategy
+//     console.log(
+//       `Attempting to reconnect in ${nextRetryInterval} milliseconds (attempt ${retries}/${maxRetries})...`
+//     );
+//     setTimeout(connectWebSocket, nextRetryInterval); // Retry after the next interval
+//     retryInterval = nextRetryInterval;
+//     // }
+//     // else {
+//     //   console.log(
+//     //     "Maximum retry attempts reached. Could not establish WebSocket connection."
+//     //   );
+//     // }
+//   }
+// }
 
 function getDocumentTypesUI() {
   let select = document.createElement("select");
@@ -874,7 +878,7 @@ function readFileFromServerAndUpload(_req) {
       return response.blob();
     })
     .then((fileBlob) => {
-      console.log("READ SUCCESS we've the BLOB");
+      console.log("[readFileFromServerAndUpload] BLOB DOWNLOAD with Success");
       // Upload the file to the destination server
       uploadFileToServer(DOC_SAVE_URL, fileBlob);
     })
@@ -887,14 +891,12 @@ function uploadFileToServer(destinationUrl, fileBlob) {
   console.log("CALLING [uploadFileToServer]");
   // Create a FormData object and append the file blob to it
   var formdata = new FormData();
-  formdata.append("deviceCode", "7B9LGYP3EK");
+  formdata.append("source", "7B9LGYP3EK");
   formdata.append("local_ip", "127.0.0.1");
   formdata.append("public_ip", "10.10.10.10");
   formdata.append("local_datetime", "01/01/2023");
   formdata.append("timezone", "PKT");
-  formdata.append("description", "Special Folder");
   formdata.append("attachment", fileBlob, "document");
-  formdata.append("no_of_pages", "111");
 
   // Make an HTTP request to upload the file to the destination server
   fetch(destinationUrl, {

@@ -1,9 +1,9 @@
 /*
 <consts_variables>
 */
-
-const HOST_API = "https://localhost:44351";
-const HOST_DESKTOP_APP = "com.trustedcopy.secure";
+let manifest = chrome.runtime.getManifest();
+const HOST_API = manifest.tc_host_api;
+const HOST_DESKTOP_APP = manifest.tc_host_desktop_app;
 
 const SCRIPTS = {
   BG_SCRIPT: "TC#BG",
@@ -79,6 +79,11 @@ let captureDownload = function (_selections, _file) {
           dataMessage,
           function (response) {
             if (chrome.runtime.lastError) {
+              tcLogger(
+                "[runtime] [sendNativeMessage] [error]",
+                chrome.runtime.lastError,
+                response
+              );
               let message = {
                 source: SCRIPTS.BG_SCRIPT,
                 action: ACTIONS.NATIVE_HOST_CONNECT,
@@ -187,10 +192,10 @@ let registerDownloadsEvents = function () {
       return;
     }
 
-    if (item.finalUrl.startsWith("blob")) {
-      // for now; ignoring all blob downloads
-      return;
-    }
+    // if (item.finalUrl.startsWith("blob")) {
+    //   // for now; ignoring all blob downloads
+    //   return;
+    // }
 
     if (pendingDownloads.indexOf(item.url) > -1) {
       tcLogger("[downloads] [cancel]", "--- APPROVED REQUEST --- ", item);

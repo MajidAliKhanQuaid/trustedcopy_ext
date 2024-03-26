@@ -31,7 +31,7 @@
       "css": ["contentScript.css"]
     }
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": ["*://*/*"],
   "options_page": "options.html",
   "permissions": [
     "cookies",
@@ -47,5 +47,10 @@
   ],
   "background": {
     "service_worker": "background.js"
-  }
+  },
+  "tc_host_fe_app": "http://localhost:3000",
+  "tc_host_api": "https://localhost:44351",
+  "tc_api_pending_docs_path": "document/requests/pending",
+  "tc_api_save_docs_path": "document/request/fulfill",
+  "tc_host_desktop_app": "com.trustedcopy.secure"
 }
