@@ -163,6 +163,29 @@ let registerDownloadsEvents = function () {
     suggest
   ) {
     tcLogger("[downloads] [onDeterminingFilename]", "CALLBACK ", item);
+    let user = await chrome.storage.local.get(["user"]);
+    tcLogger("[downloads] [session] ", "CALLBACK ", user);
+    if (!user || (user && Object.keys(user) == 0)) {
+      tcLogger(
+        "[downloads] [noSession] session was not found so using Chrome's downloading",
+        "CALLBACK ",
+        item
+      );
+      return;
+    }
+
+    let userObject = null;
+    try {
+      userObject = JSON.parse(user.user);
+    } catch (err) {
+      await chrome.storage.local.remove(["user"]);
+      tcLogger(
+        "[downloads] [session] could not parse jwt for user so logging out",
+        "CALLBACK ",
+        item
+      );
+      return;
+    }
 
     if (item.finalUrl.startsWith("blob")) {
       // for now; ignoring all blob downloads
