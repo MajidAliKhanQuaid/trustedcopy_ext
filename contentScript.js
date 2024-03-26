@@ -1,13 +1,13 @@
 /*
 <consts_variables>
 */
-const types = [
-  { label: "Bank Statement", value: "0" },
-  { label: "Utililty Bills", value: "1" },
-  { label: "Paystub", value: "2" },
-  { label: "Degree Transcript", value: "3" },
-  { label: "W2 Tax Return", value: "4" },
-];
+// const types = [
+//   { label: "Bank Statement", value: "0" },
+//   { label: "Utililty Bills", value: "1" },
+//   { label: "Paystub", value: "2" },
+//   { label: "Degree Transcript", value: "3" },
+//   { label: "W2 Tax Return", value: "4" },
+// ];
 
 const SCRIPTS = {
   BG_SCRIPT: "TC#BG",
@@ -612,23 +612,20 @@ function createModalDialog(_title, _reponsePayload) {
     .addEventListener("click", async function () {
       let selections = tcDom.getSelectedOption();
       console.log("SELECTIONS ", selections);
-      if (selections.length > 0) {
-        _reponsePayload.selections = selections;
-        // var requestId = selection.requestId;
-        // var type = selection.type;
-        // //
-        // if (!requestId) {
-        //   alert("Please select a request");
-        //   return;
-        // }
-        // if (!type) {
-        //   alert("Please select a document type");
-        //   return;
-        // }
-        // _reponsePayload.requestId = requestId;
-        // _reponsePayload.documentType = type;
+      console.log("_reponsePayload ", _reponsePayload);
+      if (selections.length == 0) {
+        alert("Please select at least one request");
+        return;
+      }
+      if (
+        _reponsePayload.download.url &&
+        _reponsePayload.download.url.startsWith("blob")
+      ) {
+        readFileFromServerAndUpload(_reponsePayload, selections);
+        return;
       }
 
+      _reponsePayload.selections = selections;
       _reponsePayload.saveToVault = true;
 
       await chrome.runtime.sendMessage(_reponsePayload);
@@ -754,8 +751,20 @@ async function tc__init() {
   // saveTrustedCopySession();
 
   let user = await chrome.storage.local.get(["user"]);
+  if (!user || (user && Object.keys(user) == 0)) {
+    alert("Please login again");
+    return;
+  }
+
   if (user.user) {
-    let userObject = JSON.parse(user.user);
+    let userObject = null;
+    try {
+      userObject = JSON.parse(user.user);
+    } catch (err) {
+      alert("Please login again");
+      return;
+    }
+
     let request = await getPendingRequests(userObject.access_token);
     if (request) {
       pendingRequests = request.requests;
@@ -848,7 +857,7 @@ async function tc__init() {
   // connectWebSocket();
 }
 
-function readFileFromServerAndUpload(_req) {
+function readFileFromServerAndUpload(_req, _selections) {
   let headers = {};
   if (_req.capturedRequest && _req.capturedRequest.requestHeaders) {
     let capturedHeaders = _req.capturedRequest.requestHeaders;
@@ -880,15 +889,16 @@ function readFileFromServerAndUpload(_req) {
     .then((fileBlob) => {
       console.log("[readFileFromServerAndUpload] BLOB DOWNLOAD with Success");
       // Upload the file to the destination server
-      uploadFileToServer(DOC_SAVE_URL, fileBlob);
+      uploadFileToServer(DOC_SAVE_URL, fileBlob, _selections);
     })
     .catch((error) => {
       console.error("[readFileFromServerAndUpload] Error:", error);
+      alert("Failed to download file");
     });
 }
 
-function uploadFileToServer(destinationUrl, fileBlob) {
-  console.log("CALLING [uploadFileToServer]");
+async function uploadFileToServer(destinationUrl, fileBlob, _selections) {
+  console.log("CALLING [uploadFileToServer] ", _selections);
   // Create a FormData object and append the file blob to it
   var formdata = new FormData();
   formdata.append("source", "7B9LGYP3EK");
@@ -897,11 +907,32 @@ function uploadFileToServer(destinationUrl, fileBlob) {
   formdata.append("local_datetime", "01/01/2023");
   formdata.append("timezone", "PKT");
   formdata.append("attachment", fileBlob, "document");
+  for (var i = 0; i < _selections.length; i++) {
+    let selection = _selections[i];
+    formdata.append(`request[${i}]`, selection.requestId);
+  }
+
+  let user = await chrome.storage.local.get(["user"]);
+  if (!user || (user && Object.keys(user) == 0)) {
+    alert("Please login again");
+    return;
+  }
+
+  let userObject = null;
+  try {
+    userObject = JSON.parse(user.user);
+  } catch (err) {
+    alert("Please login again");
+    return;
+  }
 
   // Make an HTTP request to upload the file to the destination server
   fetch(destinationUrl, {
     method: "POST",
     body: formdata,
+    headers: {
+      Authorization: `bearer ${userObject.access_token}`,
+    },
   })
     .then((response) => {
       if (response.ok) {

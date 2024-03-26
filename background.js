@@ -216,12 +216,31 @@ let registerDownloadsEvents = function () {
     //   active: true,
     //   lastFocusedWindow: true,
     // });
+    // let tabHeaderStore = headerStore[activeTabId];
+    // let capturedRequest = tabHeaderStore.request.find(
+    //   (req) => req.url == item.url
+    // );
+    // // if request not found, then get the last request and take the headers from it
+    // if (!capturedRequest) {
+    //   tcLogger(
+    //     "[tabs] [query]",
+    //     "{captureDownload} request was not found so looking for most recent request",
+    //     activeTabId
+    //   );
+    //   capturedRequest =
+    //     tabHeaderStore.request[tabHeaderStore.request.length - 1];
+    //   if (capturedRequest) {
+    //     capturedRequest.url = item.url;
+    //   }
+    // }
+    console.log("TAB HEADER ", tabHeaderStore);
     let message = {
       source: SCRIPTS.BG_SCRIPT,
       action: ACTIONS.DOWNLOAD_APPROVAL,
       target: SCRIPTS.CONTENT_SCRIPT,
       tabId: activeTabId,
       download: item,
+      capturedRequest: null,
       message: `Do you want to save the ${item.filename} to vault ?`,
     };
     tcLogger(
@@ -257,8 +276,17 @@ let registerWebRequestEvents = function () {
     },
     {
       urls: ["http://*/*", "https://*/*"],
-      types: ["main_frame", "other", "sub_frame"],
-      //types: ['main_frame','sub_frame','stylesheet','script','image','object','xmlhttprequest','other']
+      // types: ["main_frame", "other", "sub_frame"],
+      types: [
+        "main_frame",
+        "sub_frame",
+        "stylesheet",
+        "script",
+        "image",
+        "object",
+        "xmlhttprequest",
+        "other",
+      ],
     },
     ["requestHeaders", "extraHeaders"]
   );
