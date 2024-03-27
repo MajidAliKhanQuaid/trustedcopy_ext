@@ -752,7 +752,6 @@ async function tc__init() {
 
   let user = await chrome.storage.local.get(["user"]);
   if (!user || (user && Object.keys(user) == 0)) {
-    alert("Please login again");
     return;
   }
 
@@ -761,7 +760,6 @@ async function tc__init() {
     try {
       userObject = JSON.parse(user.user);
     } catch (err) {
-      alert("Please login again");
       return;
     }
 
