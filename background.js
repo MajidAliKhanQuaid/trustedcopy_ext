@@ -233,7 +233,6 @@ let registerDownloadsEvents = function () {
     //     capturedRequest.url = item.url;
     //   }
     // }
-    console.log("TAB HEADER ", tabHeaderStore);
     let message = {
       source: SCRIPTS.BG_SCRIPT,
       action: ACTIONS.DOWNLOAD_APPROVAL,
